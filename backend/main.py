@@ -2,17 +2,11 @@ from flask import request, jsonify
 from config import app, db
 from models import Contact
 
+from openverse_client import OpenverseClient
+
 
 @app.route("/contacts", methods=["GET"])
 def get_contacts():
-    # HTTP Method: GET
-    # Purpose: Retrieve all contacts from the database.
-    # Interaction with Contact model:
-    # - Uses Contact.query.all() to fetch all records from the database.
-    # - Converts each Contact object to JSON using the to_json() method.
-    # Data flow:
-    # - No data is received from the client.
-    # - Sends a JSON response containing a list of all contacts.
     contacts = Contact.query.all()
     json_contacts = list(map(lambda x: x.to_json(), contacts))
     return jsonify({"contacts": json_contacts})
@@ -20,14 +14,6 @@ def get_contacts():
 
 @app.route("/create_contact", methods=["POST"])
 def create_contact():
-    # HTTP Method: POST
-    # Purpose: Create a new contact in the database.
-    # Interaction with Contact model:
-    # - Creates a new Contact object using the data received from the client.
-    # - Adds the new Contact object to the database using db.session.add() and commits the transaction.
-    # Data flow:
-    # - Receives data from the client via request.json (firstName, lastName, email).
-    # - Sends a JSON response indicating success or failure.
     first_name = request.json.get("firstName")
     last_name = request.json.get("lastName")
     email = request.json.get("email")
@@ -50,15 +36,6 @@ def create_contact():
 
 @app.route("/update_contact/<int:user_id>", methods=["PATCH"])
 def update_contact(user_id):
-    # HTTP Method: PATCH
-    # Purpose: Update an existing contact in the database.
-    # Interaction with Contact model:
-    # - Fetches the Contact object by ID using Contact.query.get().
-    # - Updates the attributes of the Contact object with data received from the client.
-    # - Commits the changes to the database using db.session.commit().
-    # Data flow:
-    # - Receives data from the client via request.json (firstName, lastName, email).
-    # - Sends a JSON response indicating success or failure.
     contact = Contact.query.get(user_id)
     if not contact:
         return jsonify({"message": "User not found"}), 404
@@ -75,14 +52,6 @@ def update_contact(user_id):
 
 @app.route("/delete_contact/<int:user_id>", methods=["DELETE"])
 def delete_contact(user_id):
-    # HTTP Method: DELETE
-    # Purpose: Delete an existing contact from the database.
-    # Interaction with Contact model:
-    # - Fetches the Contact object by ID using Contact.query.get().
-    # - Deletes the Contact object from the database using db.session.delete() and commits the transaction.
-    # Data flow:
-    # - No data is received from the client (only the user_id in the URL).
-    # - Sends a JSON response indicating success or failure.
     contact = Contact.query.get(user_id)
 
     if not contact:
@@ -93,11 +62,49 @@ def delete_contact(user_id):
 
     return jsonify({"message": "User deleted"}), 200
 
+ov_client = OpenverseClient()
+
+@app.route("/search_images", methods=["GET"])
+def search_images():
+    """
+    Endpoint to search for images using the OpenVerse API
+    Query parameters:
+    - q: Search query (required)
+    - page: Page number (default: 1)
+    - page_size: Results per page (default: 20)
+    - license: Filter by license type
+    - creator: Filter by creator
+    - tags: Comma-separated list of tags
+    """
+    query = request.args.get("q")
+    if not query:
+        return jsonify({"error": "Search query is required"}), 400
+    
+    page = request.args.get("page", 1, type=int)
+    page_size = request.args.get("page_size", 20, type=int)
+    license_type = request.args.get("license")
+    creator = request.args.get("creator")
+    
+    # Handle tags as a comma-separated list
+    tags = request.args.get("tags")
+    if tags:
+        tags = tags.split(",")
+    
+    results = ov_client.search_images(
+        query=query,
+        page=page,
+        page_size=page_size,
+        license_type=license_type,
+        creator=creator,
+        tags=tags
+    )
+    
+    return jsonify(results)
+
+
 
 if __name__ == "__main__":
-    # Initializes the database tables if they don't already exist.
     with app.app_context():
         db.create_all()
 
-    # Starts the Flask application in debug mode.
     app.run(debug=True)
