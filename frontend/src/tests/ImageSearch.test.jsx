@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ImageSearch from '../ImageSearch';
+import React from 'react';
 
 // Mock fetch for testing
 global.fetch = jest.fn(() =>

@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'; // Add waitFor
 import '@testing-library/jest-dom';
 import App from '../App';
+import React from 'react';
 
 // Mock fetch globally - Reset implementation before each test
 beforeEach(() => {
