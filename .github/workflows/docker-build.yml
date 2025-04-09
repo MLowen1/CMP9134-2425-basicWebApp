@@ -1,0 +1,42 @@
+# .github/workflows/docker-build.yml
+name: Docker Build
+
+# Trigger only on pushes to your main branch
+# *** IMPORTANT: Change 'main' to 'development' if 'development' is your primary branch ***
+on:
+  push:
+    branches: [ development ] # Adjust branch name if needed!
+
+jobs:
+  build-backend:
+    name: Build Backend Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      # Optional but recommended: Set up Docker Buildx for more build features
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build the Docker image for the backend
+      # *** IMPORTANT: Replace 'myusername' with your Docker Hub or GitHub username ***
+      - name: Build backend image
+        run: docker build -t MLowen1/backend-app:latest ./backend
+        # The tag ':latest' is common, you could use commit SHA later: ${{ github.sha }}
+
+  build-frontend:
+    name: Build Frontend Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build the Docker image for the frontend
+      # *** IMPORTANT: Replace 'myusername' with your Docker Hub or GitHub username ***
+      - name: Build frontend image
+        run: docker build -t MLowen1/frontend-app:latest ./frontend
+        # The tag ':latest' is common, you could use commit SHA later: ${{ github.sha }}
