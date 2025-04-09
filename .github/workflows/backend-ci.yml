@@ -8,6 +8,9 @@ jobs:
   test-backend: # Job ID
     name: Test Backend Code # Job name displayed on GitHub
     runs-on: ubuntu-latest # Runner environment
+    # Add this env block to expose the secret as an environment variable
+    env:
+      OPENVERSE_API_KEY: ${{ secrets.OPENVERSE_API_KEY }} # Access the secret
 
     steps:
     # Step 1: Check out the repository code
