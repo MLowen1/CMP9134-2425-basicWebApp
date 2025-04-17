@@ -3,7 +3,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
-
 # ----------------------------------------------------------------------------
 # Flask application and extension initialisation
 # ----------------------------------------------------------------------------
@@ -18,7 +17,7 @@ app.config["SECRET_KEY"] = "change-me-in-production"  # Used by Flask
 
 # SQLAlchemy configuration
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///appdatabase.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATION"] = False
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False  # <-- Fixed typo
 
 # JWT configuration – again, this should be set from env variables in real
 # deployments.
@@ -32,7 +31,6 @@ jwt = JWTManager(app)
 # be used instead (e.g. Redis).
 token_blocklist: set[str] = set()
 
-
 @jwt.token_in_blocklist_loader
 def check_if_token_revoked(jwt_header, jwt_payload) -> bool:  # pragma: no cover
     """Callback used by flask-jwt-extended to check if a JWT has been revoked.
@@ -42,6 +40,9 @@ def check_if_token_revoked(jwt_header, jwt_payload) -> bool:  # pragma: no cover
     development, but **must** be replaced by a shared datastore (e.g. Redis)
     when the application is scaled to multiple instances.
     """
-
     jti: str = jwt_payload["jti"]
     return jti in token_blocklist
+
+# Register blueprints after app is created and configured
+from main import bp as main_bp
+app.register_blueprint(main_bp)
