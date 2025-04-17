@@ -7,7 +7,7 @@ WORKDIR /workspace
 COPY requirements.txt .
 
 # Install the Python dependencies
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 RUN pip install flask
 RUN pip install requests
