@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import ContactList from "./ContactList";
-import "./App.css";
 import ContactForm from "./ContactForm";
 import ImageSearch from "./ImageSearch";
 
@@ -11,75 +10,108 @@ function App() {
   const [activeTab, setActiveTab] = useState('contacts');
 
   useEffect(() => {
-    fetchContacts();
-  }, []);
+    if (activeTab === 'contacts') {
+      fetchContacts();
+    }
+  }, [activeTab]);
 
   const fetchContacts = async () => {
-    const response = await fetch("http://localhost:5000/contacts");
-    const data = await response.json();
-    setContacts(data.contacts);
-    console.log(data.contacts);
+    try {
+      const response = await fetch("http://localhost:5000/contacts");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setContacts(data.contacts);
+      console.log(data.contacts);
+    } catch (error) {
+      console.error("Failed to fetch contacts:", error);
+    }
   };
 
   const closeModal = () => {
-    setIsModalOpen(false)
-    setCurrentContact({})
-  }
+    setIsModalOpen(false);
+    setCurrentContact({});
+  };
 
   const openCreateModal = () => {
-    if (!isModalOpen) setIsModalOpen(true)
-  }
+    setCurrentContact({});
+    setIsModalOpen(true);
+  };
 
   const openEditModal = (contact) => {
-    if (isModalOpen) return
-    setCurrentContact(contact)
-    setIsModalOpen(true)
-  }
+    setCurrentContact(contact);
+    setIsModalOpen(true);
+  };
 
   const onUpdate = () => {
-    closeModal()
-    fetchContacts()
-  }
+    closeModal();
+    if (activeTab === 'contacts') {
+      fetchContacts();
+    }
+  };
+
+  const tabButtonStyle = "px-4 py-2 rounded-md text-sm font-medium transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500";
+  const activeTabStyle = "bg-blue-600 text-white";
+  const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
 
   return (
-    <>
-      <div className="tab-buttons">
-        <button 
-          className={`tab-button ${activeTab === 'contacts' ? 'active' : ''}`}
-          onClick={() => setActiveTab('contacts')}
-        >
-          Contacts
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'images' ? 'active' : ''}`}
-          onClick={() => setActiveTab('images')}
-        >
-          Image Search
-        </button>
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto mb-6">
+        <div className="bg-white shadow rounded-lg p-4 flex justify-center space-x-4">
+          <button
+            className={`${tabButtonStyle} ${activeTab === 'contacts' ? activeTabStyle : inactiveTabStyle}`}
+            onClick={() => setActiveTab('contacts')}
+          >
+            Contacts
+          </button>
+          <button
+            className={`${tabButtonStyle} ${activeTab === 'images' ? activeTabStyle : inactiveTabStyle}`}
+            onClick={() => setActiveTab('images')}
+          >
+            Image Search
+          </button>
+        </div>
       </div>
 
-      {activeTab === 'contacts' && (
-        <div className="contacts-tab">
-          <ContactList contacts={contacts} updateContact={openEditModal} updateCallback={onUpdate}/>
-          <button onClick={openCreateModal}>Create New Contact</button>
-          {isModalOpen && (
-            <div className="modal">
-              <div className="modal-content">
-                <span className="close" onClick={closeModal}>&times;</span>
-                <ContactForm existingContact={currentContact} updateCallback={onUpdate}/>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      <div className="max-w-7xl mx-auto">
+        {activeTab === 'contacts' && (
+          <div className="contacts-tab bg-white shadow rounded-lg p-4 sm:p-6">
+            <ContactList contacts={contacts} updateContact={openEditModal} updateCallback={onUpdate} />
+            <button
+              onClick={openCreateModal}
+              className="mt-4 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+            >
+              Create New Contact
+            </button>
+          </div>
+        )}
 
-      {activeTab === 'images' && (
-        <div className="images-tab">
-          <ImageSearch />
+        {activeTab === 'images' && (
+          <div className="images-tab">
+            <ImageSearch />
+          </div>
+        )}
+      </div>
+
+      {isModalOpen && activeTab === 'contacts' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md relative">
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-3xl font-bold"
+              onClick={closeModal}
+              aria-label="Close modal"
+            >
+              ×
+            </button>
+            <h3 className="text-xl font-semibold mb-4">
+              {Object.keys(currentContact).length > 0 ? 'Update Contact' : 'Create New Contact'}
+            </h3>
+            <ContactForm existingContact={currentContact} updateCallback={onUpdate} />
+          </div>
         </div>
       )}
-    </>
-  );
+    </div>
 }
 
 export default App;

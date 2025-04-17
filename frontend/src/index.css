@@ -1,10 +1,3 @@
-input, button, label {
-    margin-top: 10px;
-}
-
-/* Set global background color to red */
-html, body {
-    margin: 0;
-    padding: 0;
-    background-color: red;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
