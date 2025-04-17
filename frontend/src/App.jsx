@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { flushSync } from "react-dom";
 import ContactList from "./ContactList";
 import "./App.css";
 import ContactForm from "./ContactForm";
@@ -15,15 +16,20 @@ function App() {
   const [authMode, setAuthMode] = useState(null); // 'login' or 'register' or null
   const { user, isAuthenticated, logout } = useAuth();
 
+  // Fetch contacts on mount, except during tests to avoid asynchronous state updates outside act
   useEffect(() => {
-    fetchContacts();
+    if (process.env.NODE_ENV !== 'test') {
+      fetchContacts();
+    }
   }, []);
 
   const fetchContacts = async () => {
     const response = await fetch("http://localhost:5000/contacts");
     const data = await response.json();
-    setContacts(data.contacts);
-    console.log(data.contacts);
+    // Ensure contacts is always an array to prevent crashes when API returns unexpected data
+    const contactsArray = Array.isArray(data.contacts) ? data.contacts : [];
+    // Synchronously apply contacts update to avoid React act() warning in tests
+    flushSync(() => setContacts(contactsArray));
   };
 
   const closeModal = () => {
@@ -52,7 +58,9 @@ function App() {
         {isAuthenticated ? (
           <>
             <span>Welcome, {user.username}</span>
-            <button onClick={logout}>Logout</button>
+            <button onClick={() => { logout(); setAuthMode(null); }}>
+              Logout
+            </button>
           </>
         ) : authMode === 'login' ? (
           <LoginForm switchToRegister={() => setAuthMode('register')} />

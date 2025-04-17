@@ -41,7 +41,7 @@ export default function RegisterForm({ switchToLogin }) {
             required
           />
         </div>
-        <button type="submit">Register</button>
+        <button type="submit" onClick={handleSubmit}>Register</button>
       </form>
       <p>
         Already have an account?{' '}
