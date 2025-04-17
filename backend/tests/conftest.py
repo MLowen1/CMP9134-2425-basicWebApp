@@ -1,5 +1,5 @@
 import pytest
-from backend import create_app, db
+from backend.config  import create_app, db
 from models import Contact
 
 @pytest.fixture

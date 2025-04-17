@@ -1,4 +1,4 @@
-from config import db
+from backend.config import db  # Updated import to point to the correct db
 
 
 class Contact(db.Model):
