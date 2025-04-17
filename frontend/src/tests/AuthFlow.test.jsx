@@ -1,6 +1,5 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import App from '../App';
 import { AuthProvider } from '../AuthContext';
 
@@ -8,6 +7,13 @@ describe('Authentication Flow', () => {
   beforeEach(() => {
     localStorage.clear();
     jest.restoreAllMocks();
+    // Stub fetch for initial contacts load
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ contacts: [] }),
+      })
+    );
   });
 
   test('shows login and register options when unauthenticated', () => {

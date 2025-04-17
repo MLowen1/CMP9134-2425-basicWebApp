@@ -22,8 +22,9 @@ export default function RegisterForm({ switchToLogin }) {
       {error && <p className="error">{error}</p>}
       <form onSubmit={handleSubmit}>
         <div>
-          <label>Username: </label>
+          <label htmlFor="username">Username:</label>
           <input
+            id="username"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -31,8 +32,9 @@ export default function RegisterForm({ switchToLogin }) {
           />
         </div>
         <div>
-          <label>Password: </label>
+          <label htmlFor="password">Password:</label>
           <input
+            id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
