@@ -1,0 +1,20 @@
+@startuml ClassDiagram
+class User {
+  +id: Integer
+  +username: String
+  -_password_hash: String
+  +set_password(plaintext: String): void
+  +check_password(plaintext: String): Boolean
+  +to_json(): JSON
+}
+
+class Contact {
+  +id: Integer
+  +first_name: String
+  +last_name: String
+  +email: String
+  +to_json(): JSON
+}
+
+User **--** Contact : manages >
+@enduml

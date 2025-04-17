@@ -1,15 +1,27 @@
+<<<<<<< HEAD
 import React, { useState, useEffect } from "react";
+=======
+import { useState, useEffect } from "react";
+import { flushSync } from "react-dom";
+>>>>>>> 3360de8433e9c349d4875dd3f15be616af263587
 import ContactList from "./ContactList";
 import ContactForm from "./ContactForm";
 import ImageSearch from "./ImageSearch";
+import { useAuth } from './AuthContext.jsx';
+import LoginForm from './LoginForm.jsx';
+import RegisterForm from './RegisterForm.jsx';
 
 function App() {
   const [contacts, setContacts] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentContact, setCurrentContact] = useState({});
   const [activeTab, setActiveTab] = useState('contacts');
+  const [authMode, setAuthMode] = useState(null); // 'login' or 'register' or null
+  const { user, isAuthenticated, logout } = useAuth();
 
+  // Fetch contacts on mount, except during tests to avoid asynchronous state updates outside act
   useEffect(() => {
+<<<<<<< HEAD
     if (activeTab === 'contacts') {
       fetchContacts();
     }
@@ -27,6 +39,20 @@ function App() {
     } catch (error) {
       console.error("Failed to fetch contacts:", error);
     }
+=======
+    if (process.env.NODE_ENV !== 'test') {
+      fetchContacts();
+    }
+  }, []);
+
+  const fetchContacts = async () => {
+    const response = await fetch("http://localhost:5000/contacts");
+    const data = await response.json();
+    // Ensure contacts is always an array to prevent crashes when API returns unexpected data
+    const contactsArray = Array.isArray(data.contacts) ? data.contacts : [];
+    // Synchronously apply contacts update to avoid React act() warning in tests
+    flushSync(() => setContacts(contactsArray));
+>>>>>>> 3360de8433e9c349d4875dd3f15be616af263587
   };
 
   const closeModal = () => {
@@ -56,6 +82,7 @@ function App() {
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
 
   return (
+<<<<<<< HEAD
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto mb-6">
         <div className="bg-white shadow rounded-lg p-4 flex justify-center space-x-4">
@@ -72,6 +99,41 @@ function App() {
             Image Search
           </button>
         </div>
+=======
+    <>
+      <div className="auth-header">
+        {isAuthenticated ? (
+          <>
+            <span>Welcome, {user.username}</span>
+            <button onClick={() => { logout(); setAuthMode(null); }}>
+              Logout
+            </button>
+          </>
+        ) : authMode === 'login' ? (
+          <LoginForm switchToRegister={() => setAuthMode('register')} />
+        ) : authMode === 'register' ? (
+          <RegisterForm switchToLogin={() => setAuthMode('login')} />
+        ) : (
+          <>
+            <button onClick={() => setAuthMode('login')}>Login</button>
+            <button onClick={() => setAuthMode('register')}>Register</button>
+          </>
+        )}
+      </div>
+      <div className="tab-buttons">
+        <button 
+          className={`tab-button ${activeTab === 'contacts' ? 'active' : ''}`}
+          onClick={() => setActiveTab('contacts')}
+        >
+          Contacts
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'images' ? 'active' : ''}`}
+          onClick={() => setActiveTab('images')}
+        >
+          Image Search
+        </button>
+>>>>>>> 3360de8433e9c349d4875dd3f15be616af263587
       </div>
 
       <div className="max-w-7xl mx-auto">

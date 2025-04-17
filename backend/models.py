@@ -28,3 +28,45 @@ class Contact(db.Model):
             "lastName": self.last_name,
             "email": self.email,
         }
+
+
+# ----------------------------------------------------------------------------
+# Authentication / User model
+# ----------------------------------------------------------------------------
+
+from werkzeug.security import generate_password_hash, check_password_hash
+
+
+class User(db.Model):
+    """Basic user model used for JWT authentication.
+
+    NOTE:
+    -----
+    The model purposefully keeps the feature‑set minimal – only what is
+    required for the current iteration (username & password authentication).
+    """
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    _password_hash = db.Column("password_hash", db.String(255), nullable=False)
+
+    # ---------------------------------------------------------------------
+    # Helper / convenience methods
+    # ---------------------------------------------------------------------
+
+    def set_password(self, plaintext: str) -> None:
+        """Hash *plaintext* using PBKDF2 and store the result."""
+
+        self._password_hash = generate_password_hash(plaintext)
+
+    def check_password(self, plaintext: str) -> bool:
+        """Return *True* if *plaintext* matches the stored hash."""
+
+        return check_password_hash(self._password_hash, plaintext)
+
+    # ------------------------------------------------------------------
+    # Serialisation helpers – *never* include password hash in responses
+    # ------------------------------------------------------------------
+
+    def to_json(self):
+        return {"id": self.id, "username": self.username}

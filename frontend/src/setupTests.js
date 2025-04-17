@@ -1,0 +1,1 @@
+// No additional setup needed; fetch is mocked per-test and jest-dom is auto-configured
