@@ -1,9 +1,8 @@
+# conftest.py
 import pytest
 from config import app, db
 from models import Contact
-import main
 
-#Creates a test client for the Flask app and sets up an in-memory database for testing.
 @pytest.fixture
 def client():
     """Create a test client for the app with an in-memory database."""
@@ -16,7 +15,6 @@ def client():
         db.session.remove()
         db.drop_all()
 
-#Created test data
 @pytest.fixture
 def sample_contacts():
     """Create sample contacts for testing."""
