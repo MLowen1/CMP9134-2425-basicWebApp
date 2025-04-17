@@ -3,12 +3,17 @@ import ContactList from "./ContactList";
 import "./App.css";
 import ContactForm from "./ContactForm";
 import ImageSearch from "./ImageSearch";
+import { useAuth } from './AuthContext.jsx';
+import LoginForm from './LoginForm.jsx';
+import RegisterForm from './RegisterForm.jsx';
 
 function App() {
   const [contacts, setContacts] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentContact, setCurrentContact] = useState({});
   const [activeTab, setActiveTab] = useState('contacts');
+  const [authMode, setAuthMode] = useState(null); // 'login' or 'register' or null
+  const { user, isAuthenticated, logout } = useAuth();
 
   useEffect(() => {
     fetchContacts();
@@ -43,6 +48,23 @@ function App() {
 
   return (
     <>
+      <div className="auth-header">
+        {isAuthenticated ? (
+          <>
+            <span>Welcome, {user.username}</span>
+            <button onClick={logout}>Logout</button>
+          </>
+        ) : authMode === 'login' ? (
+          <LoginForm switchToRegister={() => setAuthMode('register')} />
+        ) : authMode === 'register' ? (
+          <RegisterForm switchToLogin={() => setAuthMode('login')} />
+        ) : (
+          <>
+            <button onClick={() => setAuthMode('login')}>Login</button>
+            <button onClick={() => setAuthMode('register')}>Register</button>
+          </>
+        )}
+      </div>
       <div className="tab-buttons">
         <button 
           className={`tab-button ${activeTab === 'contacts' ? 'active' : ''}`}

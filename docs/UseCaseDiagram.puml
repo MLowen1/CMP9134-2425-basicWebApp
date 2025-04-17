@@ -1,0 +1,25 @@
+@startuml UseCaseDiagram
+actor User
+
+rectangle "Web Application" {
+  (Register)
+  (Login)
+  (View Profile)
+  (Logout)
+  (View Contacts)
+  (Create Contact)
+  (Update Contact)
+  (Delete Contact)
+  (Search Images)
+}
+
+User --> (Register)
+User --> (Login)
+User --> (View Profile)
+User --> (Logout)
+User --> (View Contacts)
+User --> (Create Contact)
+User --> (Update Contact)
+User --> (Delete Contact)
+User --> (Search Images)
+@enduml

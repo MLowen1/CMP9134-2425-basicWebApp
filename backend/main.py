@@ -1,8 +1,67 @@
 from flask import request, jsonify
-from config import app, db
-from models import Contact
+from config import app, db, token_blocklist
+from models import Contact, User
+from flask_jwt_extended import (
+    create_access_token,
+    get_jwt,
+    get_jwt_identity,
+    jwt_required,
+)
 
 from openverse_client import OpenverseClient
+
+@app.route("/register", methods=["POST"])
+def register():
+    """Endpoint to register a new user and return a JWT access token."""
+    username = request.json.get("username")
+    password = request.json.get("password")
+    if not username or not password:
+        return jsonify({"message": "Username and password are required"}), 400
+    # Check if the username is already taken
+    if User.query.filter_by(username=username).first():
+        return jsonify({"message": "Username already exists"}), 400
+    # Create and store the new user
+    new_user = User(username=username)
+    new_user.set_password(password)
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+    except Exception as e:
+        return jsonify({"message": str(e)}), 400
+    # Generate JWT access token for the new user
+    access_token = create_access_token(identity=new_user.id)
+    return jsonify({"message": "User registered!", "access_token": access_token}), 201
+    
+@app.route("/login", methods=["POST"])
+def login():
+    """Endpoint to authenticate a user and return a JWT access token."""
+    username = request.json.get("username")
+    password = request.json.get("password")
+    if not username or not password:
+        return jsonify({"message": "Username and password are required"}), 400
+    user = User.query.filter_by(username=username).first()
+    if not user or not user.check_password(password):
+        return jsonify({"message": "Bad username or password"}), 401
+    access_token = create_access_token(identity=user.id)
+    return jsonify({"message": "Login succeeded", "access_token": access_token}), 200
+
+@app.route("/logout", methods=["POST"])
+@jwt_required()
+def logout():
+    """Endpoint to revoke the current JWT access token."""
+    jti = get_jwt()["jti"]
+    token_blocklist.add(jti)
+    return jsonify({"message": "Logout successful"}), 200
+
+@app.route("/@me", methods=["GET"])
+@jwt_required()
+def get_current_user():
+    """Endpoint to return the current authenticated user's info."""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+    return jsonify(user.to_json()), 200
 
 
 @app.route("/contacts", methods=["GET"])
