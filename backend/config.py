@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+import importlib
 
 # ----------------------------------------------------------------------------
 # Flask application and extension initialisation
@@ -17,7 +18,7 @@ app.config["SECRET_KEY"] = "change-me-in-production"  # Used by Flask
 
 # SQLAlchemy configuration
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///appdatabase.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False  # <-- Fixed typo
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # JWT configuration – again, this should be set from env variables in real
 # deployments.
@@ -33,16 +34,10 @@ token_blocklist: set[str] = set()
 
 @jwt.token_in_blocklist_loader
 def check_if_token_revoked(jwt_header, jwt_payload) -> bool:  # pragma: no cover
-    """Callback used by flask-jwt-extended to check if a JWT has been revoked.
-
-    The implementation below keeps the identifiers of revoked JWTs in an
-    in‑memory *set*. This is more than enough for automated tests and local
-    development, but **must** be replaced by a shared datastore (e.g. Redis)
-    when the application is scaled to multiple instances.
-    """
+    """Callback used by flask-jwt-extended to check if a JWT has been revoked."""
     jti: str = jwt_payload["jti"]
     return jti in token_blocklist
 
-# Register blueprints after app is created and configured
-from main import bp as main_bp
-app.register_blueprint(main_bp)
+# Dynamically load and register blueprints
+main_module = importlib.import_module("main")
+app.register_blueprint(main_module.bp)

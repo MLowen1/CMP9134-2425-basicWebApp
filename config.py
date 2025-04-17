@@ -1,4 +1,5 @@
+# config.py
 """
-Top-level configuration module that re-exports backend app, database, and token_blocklist.
+Top-level configuration module.
 """
-from backend.config import app, db, token_blocklist
+# Removed imports to avoid circular dependency
