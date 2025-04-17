@@ -2,7 +2,6 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-import importlib
 
 # ----------------------------------------------------------------------------
 # Flask application and extension initialisation
@@ -38,6 +37,10 @@ def check_if_token_revoked(jwt_header, jwt_payload) -> bool:  # pragma: no cover
     jti: str = jwt_payload["jti"]
     return jti in token_blocklist
 
-# Dynamically load and register blueprints
-main_module = importlib.import_module("main")
-app.register_blueprint(main_module.bp)
+# Register blueprint for routes
+from .main import bp as main_bp
+app.register_blueprint(main_bp)
+
+def create_app():
+    """Application factory that returns the Flask app instance."""
+    return app
