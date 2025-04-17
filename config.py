@@ -1,0 +1,4 @@
+"""
+Top-level configuration module that re-exports backend app and database.
+"""
+from backend.config import app, db

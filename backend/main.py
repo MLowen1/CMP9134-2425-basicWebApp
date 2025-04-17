@@ -2,7 +2,7 @@ from flask import request, jsonify
 from config import app, db
 from models import Contact
 
-from openverse_client import OpenverseClient
+from .openverse_client import OpenverseClient
 
 
 @app.route("/contacts", methods=["GET"])
