@@ -29,10 +29,6 @@ function App() {
     const contactsArray = Array.isArray(data.contacts) ? data.contacts : [];
     // Synchronously apply contacts update to avoid React act() warning in tests
     flushSync(() => setContacts(contactsArray));
-<<<<<<< HEAD
->>>>>>> 3360de8433e9c349d4875dd3f15be616af263587
-=======
->>>>>>> 3360de8433e9c349d4875dd3f15be616af263587
   };
 
   const closeModal = () => {
@@ -62,58 +58,61 @@ function App() {
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
 
   return (
-<<<<<<< HEAD
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto mb-6">
+        <div className="auth-header mb-4 flex justify-center space-x-4">
+          {isAuthenticated ? (
+            <>
+              <span>Welcome, {user.username}</span>
+              <button
+                onClick={() => {
+                  logout();
+                  setAuthMode(null);
+                }}
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none"
+              >
+                Logout
+              </button>
+            </>
+          ) : authMode === 'login' ? (
+            <LoginForm switchToRegister={() => setAuthMode('register')} />
+          ) : authMode === 'register' ? (
+            <RegisterForm switchToLogin={() => setAuthMode('login')} />
+          ) : (
+            <>
+              <button
+                onClick={() => setAuthMode('login')}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => setAuthMode('register')}
+                className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none"
+              >
+                Register
+              </button>
+            </>
+          )}
+        </div>
         <div className="bg-white shadow rounded-lg p-4 flex justify-center space-x-4">
           <button
-            className={`${tabButtonStyle} ${activeTab === 'contacts' ? activeTabStyle : inactiveTabStyle}`}
+            className={`${tabButtonStyle} ${
+              activeTab === 'contacts' ? activeTabStyle : inactiveTabStyle
+            }`}
             onClick={() => setActiveTab('contacts')}
           >
             Contacts
           </button>
           <button
-            className={`${tabButtonStyle} ${activeTab === 'images' ? activeTabStyle : inactiveTabStyle}`}
+            className={`${tabButtonStyle} ${
+              activeTab === 'images' ? activeTabStyle : inactiveTabStyle
+            }`}
             onClick={() => setActiveTab('images')}
           >
             Image Search
           </button>
         </div>
-=======
-    <>
-      <div className="auth-header">
-        {isAuthenticated ? (
-          <>
-            <span>Welcome, {user.username}</span>
-            <button onClick={() => { logout(); setAuthMode(null); }}>
-              Logout
-            </button>
-          </>
-        ) : authMode === 'login' ? (
-          <LoginForm switchToRegister={() => setAuthMode('register')} />
-        ) : authMode === 'register' ? (
-          <RegisterForm switchToLogin={() => setAuthMode('login')} />
-        ) : (
-          <>
-            <button onClick={() => setAuthMode('login')}>Login</button>
-            <button onClick={() => setAuthMode('register')}>Register</button>
-          </>
-        )}
-      </div>
-      <div className="tab-buttons">
-        <button 
-          className={`tab-button ${activeTab === 'contacts' ? 'active' : ''}`}
-          onClick={() => setActiveTab('contacts')}
-        >
-          Contacts
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'images' ? 'active' : ''}`}
-          onClick={() => setActiveTab('images')}
-        >
-          Image Search
-        </button>
->>>>>>> 3360de8433e9c349d4875dd3f15be616af263587
       </div>
 
       <div className="max-w-7xl mx-auto">

@@ -15,6 +15,9 @@ describe('Authentication Flow', () => {
       })
     );
   });
+  afterEach(() => {
+    jest.resetAllMocks();
+  });
 
   test('shows login and register options when unauthenticated', () => {
     render(
