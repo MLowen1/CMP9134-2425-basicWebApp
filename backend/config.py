@@ -15,11 +15,19 @@ CORS(app)
 # variables or a secure configuration service. It is hard‑coded here only to
 # keep the demo self‑contained and to simplify automated testing.
 app.config["SECRET_KEY"] = "change-me-in-production"  # Used by Flask
+<<<<<<< HEAD
 
 # SQLAlchemy configuration
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///appdatabase.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+=======
+
+# SQLAlchemy configuration
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///appdatabase.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATION"] = False
+
+>>>>>>> 3360de8433e9c349d4875dd3f15be616af263587
 # JWT configuration – again, this should be set from env variables in real
 # deployments.
 app.config["JWT_SECRET_KEY"] = "another-change-me-secret"  # Used by JWTs

@@ -3,6 +3,9 @@ import React, { useState, useEffect } from "react";
 =======
 import { useState, useEffect } from "react";
 import { flushSync } from "react-dom";
+<<<<<<< HEAD
+>>>>>>> 3360de8433e9c349d4875dd3f15be616af263587
+=======
 >>>>>>> 3360de8433e9c349d4875dd3f15be616af263587
 import ContactList from "./ContactList";
 import ContactForm from "./ContactForm";
@@ -22,6 +25,7 @@ function App() {
   // Fetch contacts on mount, except during tests to avoid asynchronous state updates outside act
   useEffect(() => {
 <<<<<<< HEAD
+<<<<<<< HEAD
     if (activeTab === 'contacts') {
       fetchContacts();
     }
@@ -40,6 +44,8 @@ function App() {
       console.error("Failed to fetch contacts:", error);
     }
 =======
+=======
+>>>>>>> 3360de8433e9c349d4875dd3f15be616af263587
     if (process.env.NODE_ENV !== 'test') {
       fetchContacts();
     }
@@ -52,6 +58,9 @@ function App() {
     const contactsArray = Array.isArray(data.contacts) ? data.contacts : [];
     // Synchronously apply contacts update to avoid React act() warning in tests
     flushSync(() => setContacts(contactsArray));
+<<<<<<< HEAD
+>>>>>>> 3360de8433e9c349d4875dd3f15be616af263587
+=======
 >>>>>>> 3360de8433e9c349d4875dd3f15be616af263587
   };
 
