@@ -10,27 +10,17 @@ from flask_jwt_extended import (
 
 from .openverse_client import OpenverseClient
 
-@app.route("/register", methods=["POST"])
+@app.route('/register', methods=['POST'])
 def register():
-    """Endpoint to register a new user and return a JWT access token."""
-    username = request.json.get("username")
-    password = request.json.get("password")
-    if not username or not password:
+    data = request.json
+    if not data.get("username") or not data.get("password"):
         return jsonify({"message": "Username and password are required"}), 400
-    # Check if the username is already taken
-    if User.query.filter_by(username=username).first():
-        return jsonify({"message": "Username already exists"}), 400
-    # Create and store the new user
-    new_user = User(username=username)
-    new_user.set_password(password)
-    try:
-        db.session.add(new_user)
-        db.session.commit()
-    except Exception as e:
-        return jsonify({"message": str(e)}), 400
-    # Generate JWT access token for the new user
-    access_token = create_access_token(identity=new_user.id)
-    return jsonify({"message": "User registered!", "access_token": access_token}), 201
+    # Perform registration logic
+    user = User(username=data["username"], password=hash_password(data["password"]))
+    db.session.add(user)
+    db.session.commit()
+    token = generate_access_token(user)
+    return jsonify({"message": "User registered!", "access_token": token}), 201
     
 @app.route("/login", methods=["POST"])
 def login():

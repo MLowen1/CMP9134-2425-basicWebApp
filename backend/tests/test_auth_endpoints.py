@@ -101,28 +101,27 @@ def test_login_missing_fields(client):
 def test_me_and_logout_flow(client):
     # Register and obtain token
     payload = {"username": "tester", "password": "secret"}
-    reg_resp = client.post(
-        '/register', data=json.dumps(payload), content_type='application/json'
-    )
-    assert reg_resp.status_code == 201
-    token = reg_resp.get_json()["access_token"]
+    reg_resp = client.post('/register', data=json.dumps(payload), content_type='application/json')
+    assert reg_resp.status_code == 201, f"Registration failed: {reg_resp.get_json()}"
+    token = reg_resp.get_json().get("access_token")
+    assert token, f"Token missing in response: {reg_resp.get_json()}"
     auth_header = {"Authorization": f"Bearer {token}"}
 
     # Access @me endpoint
     me_resp = client.get('/@me', headers=auth_header)
-    assert me_resp.status_code == 200
+    assert me_resp.status_code == 200, f"Accessing /@me failed: {me_resp.get_json()}"
     user_data = me_resp.get_json()
-    assert user_data.get("username") == "tester"
+    assert user_data.get("username") == "tester", "Username mismatch"
     assert "id" in user_data
 
     # Logout
     logout_resp = client.post('/logout', headers=auth_header)
-    assert logout_resp.status_code == 200
+    assert logout_resp.status_code == 200, f"Logout failed: {logout_resp.get_json()}"
     assert logout_resp.get_json().get("message") == "Logout successful"
 
     # Token should now be invalid
     me_resp2 = client.get('/@me', headers=auth_header)
-    assert me_resp2.status_code == 401
+    assert me_resp2.status_code == 401, f"Token should be invalid: {me_resp2.get_json()}"
     err = me_resp2.get_json()
     assert err is not None
     
