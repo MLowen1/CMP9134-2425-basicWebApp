@@ -1,75 +1,63 @@
 import json
 import pytest
+from backend.models import Contact
+from backend.extensions import db
 
-def test_get_contacts(client, sample_contacts):
-    """Test retrieving all contacts."""
-    response = client.get('/contacts')
-    data = json.loads(response.data)
+def test_get_contacts(client, sample_contacts, app):
+    """Test getting the list of contacts."""
+    with app.app_context():
+        response = client.get('/api/contacts')
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert len(data) == 2
 
-    assert response.status_code == 200
-    assert len(data['contacts']) == 3
-    assert data['contacts'][0]['firstName'] == 'John'
-
-def test_create_contact(client):
+def test_create_contact(client, app):
     """Test creating a new contact."""
-    new_contact = {
-        "firstName": "Test",
-        "lastName": "User",
-        "email": "test@example.com"
-    }
+    with app.app_context():
+        new_contact = {
+            "firstName": "Test",
+            "lastName": "User",
+            "email": "test@example.com"
+        }
+        
+        response = client.post('/api/contacts', json=new_contact)
+        
+        assert response.status_code == 201
+        data = json.loads(response.data)
+        assert data.get('firstName') == 'Test'
+        assert data.get('lastName') == 'User'
+        assert data.get('email') == 'test@example.com'
 
-    response = client.post('/create_contact',
-                         data=json.dumps(new_contact),
-                         content_type='application/json')
-
-    assert response.status_code == 201
-
-    # Verify the contact was created
-    get_response = client.get('/contacts')
-    data = json.loads(get_response.data)
-    emails = [contact['email'] for contact in data['contacts']]
-    assert "test@example.com" in emails
-
-def test_update_contact(client, sample_contacts):
+def test_update_contact(client, app, sample_contacts):
     """Test updating an existing contact."""
-    # Get the ID of the first contact
-    response = client.get('/contacts')
-    data = json.loads(response.data)
-    contact_id = data['contacts'][0]['id']
+    with app.app_context():
+        # Get a contact ID from the database
+        contact_id = sample_contacts[0].id
+        
+        updated_data = {
+            "firstName": "UpdatedFirstName",
+            "lastName": "UpdatedLastName",
+            "email": "updated@example.com"
+        }
+        
+        response = client.put(f'/api/contacts/{contact_id}', json=updated_data)
+        
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data.get('firstName') == 'UpdatedFirstName'
+        
+        # Use db.session.get to verify the update
+        updated_contact = db.session.get(Contact, contact_id)
+        assert updated_contact.first_name == 'UpdatedFirstName'
 
-    updated_contact = {
-        "firstName": "UpdatedName",
-        "lastName": "UpdatedLastName",
-        "email": "updated@example.com"
-    }
-
-    response = client.patch(f'/update_contact/{contact_id}',
-                          data=json.dumps(updated_contact),
-                          content_type='application/json')
-
-    assert response.status_code == 200
-
-    # Verify the contact was updated
-    get_response = client.get('/contacts')
-    data = json.loads(get_response.data)
-    for contact in data['contacts']:
-        if contact['id'] == contact_id:
-            assert contact['firstName'] == "UpdatedName"
-            assert contact['email'] == "updated@example.com"
-
-def test_delete_contact(client, sample_contacts):
+def test_delete_contact(client, app, sample_contacts):
     """Test deleting a contact."""
-    # Get the ID of the first contact
-    response = client.get('/contacts')
-    data = json.loads(response.data)
-    contact_id = data['contacts'][0]['id']
-    initial_count = len(data['contacts'])
-
-    # Delete the contact
-    response = client.delete(f'/delete_contact/{contact_id}')
-    assert response.status_code == 200
-
-    # Verify the contact was deleted
-    get_response = client.get('/contacts')
-    data = json.loads(get_response.data)
-    assert len(data['contacts']) == initial_count - 1
+    with app.app_context():
+        # Get a contact ID from the database
+        contact_id = sample_contacts[0].id
+        
+        response = client.delete(f'/api/contacts/{contact_id}')
+        
+        assert response.status_code == 200
+        # Verify the contact was deleted
+        assert db.session.get(Contact, contact_id) is None

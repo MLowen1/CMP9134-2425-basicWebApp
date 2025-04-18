@@ -8,7 +8,7 @@ const ContactList = ({ contacts, updateContact, updateCallback }) => {
         method: "DELETE", // HTTP method used for deleting a resource
       };
       const response = await fetch(
-        `http://127.0.0.1:5000/delete_contact/${id}`, // Backend API endpoint for deleting a contact
+        `http://localhost:5000/delete_contact/${id}`, // Use localhost consistently
         options
       );
 
@@ -26,32 +26,54 @@ const ContactList = ({ contacts, updateContact, updateCallback }) => {
   };
 
   return (
-    <div>
-      <h2>Contacts</h2>
-      <table>
-        <thead>
+    // Added overflow-x-auto for responsiveness on small screens
+    <div className="overflow-x-auto bg-white shadow rounded-lg">
+      {/* Removed redundant h2 as it's likely handled in App.jsx */}
+      {/* <h2 className="text-2xl font-semibold mb-4 text-neutral-dark p-4 sm:p-6">Contacts</h2> */}
+      <table className="min-w-full divide-y divide-neutral-DEFAULT">
+        <thead className="bg-neutral-light">
           <tr>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>Email</th>
-            <th>Actions</th>
+            {/* Adjusted padding and text style */}
+            <th className="px-4 py-3 sm:px-6 text-left text-xs font-semibold text-secondary uppercase tracking-wider">First Name</th>
+            <th className="px-4 py-3 sm:px-6 text-left text-xs font-semibold text-secondary uppercase tracking-wider">Last Name</th>
+            <th className="px-4 py-3 sm:px-6 text-left text-xs font-semibold text-secondary uppercase tracking-wider">Email</th>
+            <th className="px-4 py-3 sm:px-6 text-left text-xs font-semibold text-secondary uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
-        <tbody>
-          {contacts.map((contact) => (
-            <tr key={contact.id}>
-              {/* Display contact details */}
-              <td>{contact.firstName}</td>
-              <td>{contact.lastName}</td>
-              <td>{contact.email}</td>
-              <td>
-                {/* Button to open the modal for updating a contact */}
-                <button onClick={() => updateContact(contact)}>Update</button>
-                {/* Button to delete a contact */}
-                <button onClick={() => onDelete(contact.id)}>Delete</button>
+        <tbody className="bg-white divide-y divide-neutral-DEFAULT">
+          {contacts.length > 0 ? (
+            contacts.map((contact) => (
+              // Subtle hover effect
+              <tr key={contact.id} className="hover:bg-neutral-light transition-colors duration-150 ease-in-out">
+                {/* Adjusted padding and text style */}
+                <td className="px-4 py-4 sm:px-6 whitespace-nowrap text-sm text-neutral-dark">{contact.firstName}</td>
+                <td className="px-4 py-4 sm:px-6 whitespace-nowrap text-sm text-neutral-dark">{contact.lastName}</td>
+                <td className="px-4 py-4 sm:px-6 whitespace-nowrap text-sm text-neutral-dark">{contact.email}</td>
+                <td className="px-4 py-4 sm:px-6 whitespace-nowrap text-sm font-medium space-x-2">
+                  {/* Consistent button styling */}
+                  <button 
+                    onClick={() => updateContact(contact)} 
+                    className="px-3 py-1.5 text-xs bg-primary text-white rounded-md hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+                  >
+                    Update
+                  </button>
+                  <button 
+                    onClick={() => onDelete(contact.id)} 
+                    className="px-3 py-1.5 text-xs bg-danger text-white rounded-md hover:bg-danger-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-danger transition-colors"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            // Display a message when there are no contacts
+            <tr>
+              <td colSpan="4" className="px-4 py-6 sm:px-6 text-center text-sm text-neutral-medium">
+                No contacts found.
               </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>

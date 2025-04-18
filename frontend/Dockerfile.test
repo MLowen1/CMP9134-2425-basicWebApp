@@ -1,16 +1,37 @@
 FROM node:18-alpine
 
+# Set the working directory to /app to match docker-compose volume mount
 WORKDIR /app
 
 # Copy package.json and package-lock.json
 COPY package*.json ./
-COPY .babelrc ./
+# Copy .babelrc if it's still needed, otherwise remove this line
+# COPY .babelrc ./ # Consider if babel.config.cjs makes this redundant
 
 # Install dependencies
 RUN npm install
 
-# Copy the source code
+# Create mock directories relative to the new WORKDIR /app
+RUN mkdir -p /app/src/tests/__mocks__ && \
+    echo "module.exports = {};" > /app/src/tests/__mocks__/styleMock.js
+
+# Create setupTests.js relative to the new WORKDIR /app
+RUN mkdir -p /app/src/tests && \
+    echo "import '@testing-library/jest-dom';" > /app/src/tests/setupTests.js
+
+# Remove conflicting config files from the WORKDIR /app
+RUN rm -f /app/babel.config.js /app/postcss.config.js /app/jest.config.js
+
+# Create config files in WORKDIR /app (ensure these are correct for your setup)
+# Note: These RUN commands create files *inside the image*. If you have these files
+# locally, the COPY . . command below will overwrite them unless you remove these lines.
+# If you have local .cjs files, you might not need these RUN commands.
+# RUN echo 'export default { plugins: { tailwindcss: {}, autoprefixer: {} } };' > /app/postcss.config.js && \
+#     echo 'export default { presets: [ ["@babel/preset-env", { targets: { node: "current" } }], ["@babel/preset-react", { runtime: "automatic" }] ], plugins: [] };' > /app/babel.config.js && \
+#     echo 'export default { transform: { "^.+\\\\.(js|jsx)$": ["babel-jest"] }, testEnvironment: "jsdom", moduleNameMapper: { "\\\\.(css|less|scss)$": "<rootDir>/src/tests/__mocks__/styleMock.js" }, setupFilesAfterEnv: ["<rootDir>/src/tests/setupTests.js"] };' > /app/jest.config.js
+
+# Copy the source code into WORKDIR /app
 COPY . .
 
-# Run tests
+# Default command (will be overridden by docker-compose.yml)
 CMD ["npm", "test"]

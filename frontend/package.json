@@ -7,8 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "jest --runInBand",
-    "test:ci": "jest --runInBand"
+    "test": "jest --runInBand --verbose --coverage",
+    "test:ci": "jest --runInBand --coverage"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -38,16 +38,5 @@
     "vite": "^5.2.0",
     "vitest": "^1.0.4",
     "@tailwindcss/postcss": "^4.0.0"
-  },
-  "jest": {
-    "transform": {
-      "^.+\\.[jt]sx?$": "babel-jest"
-    },
-    "testEnvironment": "jsdom",
-    "moduleFileExtensions": ["js", "jsx"],
-    "setupFilesAfterEnv": ["<rootDir>/jest.setup.js"],
-    "moduleNameMapper": {
-      "\\.(css|less|scss|sass)$": "identity-obj-proxy"
-    }
   }
 }

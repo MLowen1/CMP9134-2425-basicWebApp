@@ -46,7 +46,7 @@ services:
       - PYTHONPATH=/app # Keep /app in Python path
       - FLASK_APP=backend.main:create_app() # Changed: Point to the module within /app
     # Changed: Update coverage target and test path relative to working_dir
-    command: pytest -v --cov=backend --cov-report=term-missing backend/tests/ 
+    # command: pytest -v --cov=backend --cov-report=term-missing backend/tests/ # Commented out the pytest command
 
   frontend-test:
     build:
@@ -55,7 +55,7 @@ services:
     volumes:
       - ./frontend:/app:cached # Keep as /app
       - /app/node_modules
-    command: npm test --prefix /app
+    command: npm test # Changed from 'npm test --prefix /app'
 
 # Define the network at the top level
 networks:

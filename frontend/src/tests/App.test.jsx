@@ -4,6 +4,7 @@ import React from 'react';
 
 // Mock fetch globally - Reset implementation before each test
 beforeEach(() => {
+    console.log('--- App.test.jsx: beforeEach ---'); // Added log
     global.fetch = jest.fn(() =>
       Promise.resolve({
         ok: true,
@@ -14,9 +15,11 @@ beforeEach(() => {
 
 
 describe('App Component', () => {
+    console.log('--- App.test.jsx: Describe block entered ---'); // Added log
     // fetch.mockClear() is less critical if we reset implementation in beforeEach
 
     test('renders the app with tabs and contacts tab initially', async () => { // Make test async
+        console.log('--- App.test.jsx: Test 1 started ---'); // Added log
         render(<App />);
 
         // Check tab buttons exist
@@ -28,9 +31,11 @@ describe('App Component', () => {
             // Check for something uniquely in the Contacts tab after initial render
             expect(screen.getByText(/Create New Contact/i)).toBeInTheDocument();
         });
+        console.log('--- App.test.jsx: Test 1 finished ---'); // Added log
     });
 
     test('switches between tabs', async () => { // Make test async
+        console.log('--- App.test.jsx: Test 2 started ---'); // Added log
         render(<App />);
 
         // 1. Wait for initial render to settle (Contacts tab)
@@ -62,5 +67,6 @@ describe('App Component', () => {
             expect(screen.getByText(/Create New Contact/i)).toBeInTheDocument();
             expect(screen.queryByPlaceholderText(/Search for images/i)).not.toBeInTheDocument();
          });
+         console.log('--- App.test.jsx: Test 2 finished ---'); // Added log
     });
 });

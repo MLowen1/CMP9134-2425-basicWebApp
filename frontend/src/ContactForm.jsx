@@ -21,7 +21,7 @@ const ContactForm = ({ existingContact = {}, updateCallback }) => {
 
     // Determine the API endpoint and HTTP method based on whether it's an update or create operation
     const url =
-      "http://127.0.0.1:5000/" +
+      `http://localhost:5000/` + // Use localhost consistently
       (updating ? `update_contact/${existingContact.id}` : "create_contact");
     const options = {
       method: updating ? "PATCH" : "POST", // PATCH for updating, POST for creating

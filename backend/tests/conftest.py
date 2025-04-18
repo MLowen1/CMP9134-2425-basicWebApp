@@ -1,109 +1,149 @@
-# backend/tests/conftest.py
-import pytest
 import os
-# Use direct imports assuming tests are run from 'backend' or '/app' directory
-from backend.main import create_app  # Changed to absolute import
-# Import db from extensions directly
-from backend.extensions import db as _db  # Added absolute import for db
-# Import models directly
-from models import Contact, User, TokenBlocklist
+import sys
+import pytest
+import tempfile
+import signal
+import atexit
+import gc
 
-@pytest.fixture(scope='session')
+# Add the project root to the Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
+# Import the app factory and extensions
+from backend.main import create_app
+from backend.extensions import db
+from backend.models import User, Contact
+# Import create_access_token
+from flask_jwt_extended import create_access_token
+
+# Session-level teardown function to clean up resources
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_after_tests(request):
+    """Cleanup function that runs after all tests complete."""
+    
+    def finalize():
+        # Force garbage collection to clean up any lingering objects
+        gc.collect()
+        
+        # Close any open database connections
+        try:
+            db.session.remove()
+            db.engine.dispose()
+        except:
+            pass
+            
+        # Print confirmation for debugging
+        print("Teardown complete - cleaned up all resources")
+    
+    # Register the finalize function to run when the session ends
+    request.addfinalizer(finalize)
+    
+    # Also register with atexit to ensure it runs even on abnormal termination
+    atexit.register(finalize)
+    
+    # Set up signal handlers for graceful shutdown
+    def signal_handler(signum, frame):
+        print(f"Received signal {signum}, cleaning up...")
+        finalize()
+        # Re-raise the signal to allow the default handler to run
+        signal.signal(signum, signal.SIG_DFL)
+        signal.raise_signal(signum)
+    
+    # Register signal handlers for common termination signals
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    return
+
+@pytest.fixture
 def app():
-    """Session-wide test Flask application."""
-    # Set Testing environment variable BEFORE creating app
-    # Ensure this doesn't conflict if create_app also reads FLASK_ENV
-    os.environ['FLASK_ENV'] = 'testing'
-
-    # Use a dedicated testing configuration
-    # You could have a specific config class or update dict
-    config_override = {
+    """Create a Flask application for testing.""" 
+    # Create a test configuration
+    test_config = {
         "TESTING": True,
-        "SQLALCHEMY_DATABASE_URI": os.environ.get('TEST_DATABASE_URL', "sqlite:///:memory:"), # In-memory SQLite for tests
+        "DEBUG": True,
+        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
         "SQLALCHEMY_TRACK_MODIFICATIONS": False,
-        "JWT_SECRET_KEY": "test-secret-key", # Use a fixed secret for tests
-        # Disable CSRF protection in tests if you use it
-        # "WTF_CSRF_ENABLED": False,
-        "SERVER_NAME": "localhost.test" # Helps with url_for generation if needed
+        "JWT_SECRET_KEY": "test-secret-key"
     }
+    
+    # Create the app
+    app = create_app(test_config)
+    
+    # Create all tables
+    with app.app_context():
+        db.create_all()
+        print("Created test database tables")
+    
+    # Return the app to the test
+    yield app
+    
+    # Clean up
+    with app.app_context():
+        db.session.remove()
+        db.drop_all()
+        print("Dropped test database tables")
 
-    _app = create_app(config_override) # Pass test config if factory supports it
-
-    # Establish an application context before running tests
-    ctx = _app.app_context()
-    ctx.push()
-
-    yield _app # Provide the app instance to the tests
-
-    # Teardown: pop the context
-    ctx.pop()
-
-
-@pytest.fixture(scope='session')
-def db(app):
-    """Session-wide database."""
-    # Create tables once per session
-    _db.create_all()
-
-    yield _db # Provide the database instance to the tests
-
-    # Drop tables once per session
-    _db.session.remove() # Ensure session is closed
-    _db.drop_all()
-
-
-@pytest.fixture(scope='function')
-def session(db):
-    """Creates a new database session for a test."""
-    # Connect to the database and create a transaction
-    connection = db.engine.connect()
-    transaction = connection.begin()
-
-    # Start a session bound to the transaction
-    options = dict(bind=connection, binds={})
-    sess = db.create_scoped_session(options=options)
-
-    # Replace the default session with this transaction-bound session
-    db.session = sess
-
-    yield sess # Provide the session to the test
-
-    # Teardown: rollback the transaction and close the session
-    sess.remove()
-    transaction.rollback() # Rollback ensures isolation and cleanup after each test
-    connection.close()
-
-
-@pytest.fixture(scope='function')
+@pytest.fixture
 def client(app):
-    """A test client for the app (function scope)."""
+    """Create a test client for the app."""
     return app.test_client()
 
+@pytest.fixture
+def sample_contacts(app):
+    """Create sample contacts for testing."""
+    contacts = []
+    with app.app_context():
+        # Create two sample contacts
+        contacts = [
+            Contact(first_name="John", last_name="Doe", email="john@example.com"),
+            Contact(first_name="Jane", last_name="Smith", email="jane@example.com")
+        ]
+        db.session.add_all(contacts)
+        db.session.commit()
+        
+        # Save their IDs
+        contact_ids = [c.id for c in contacts]
+    
+    yield contacts
+    
+    # Clean up
+    with app.app_context():
+        for contact_id in contact_ids:
+            contact = db.session.get(Contact, contact_id)
+            if contact:
+                db.session.delete(contact)
+        db.session.commit()
 
-@pytest.fixture(scope='function')
-def runner(app):
-    """A test runner for the app's Click commands (function scope)."""
-    return app.test_cli_runner()
-
-# Sample data fixture using the function-scoped 'session'
-@pytest.fixture(scope='function')
-def sample_contacts(session): # Inject the function-scoped session
-    """Create sample contacts for testing within a transaction."""
-    contacts = [
-        Contact(first_name="John", last_name="Doe", email="john@example.com"),
-        Contact(first_name="Jane", last_name="Smith", email="jane@example.com"),
-    ]
-    session.add_all(contacts)
-    session.commit() # Commit within the transaction managed by 'session' fixture
-    # The IDs will be available after commit
-    return contacts
-
-# Add similar fixtures for sample users if needed for auth tests
-@pytest.fixture(scope='function')
-def sample_user(session):
+@pytest.fixture
+def sample_user(app):
     """Create a sample user for testing."""
-    user = User(username="testuser", email="test@example.com")
-    user.set_password("password") # Assuming you have a set_password method
-    session.add(user)
-    session.commit() # Commit within the transaction managed by 'session' fixture
-    return user
+    with app.app_context():
+        user = User(username="testuser")
+        user.set_password("password")
+        db.session.add(user)
+        db.session.commit()
+        user_id = user.id
+    
+    # Reload user within context to ensure it's bound to the session
+    with app.app_context():
+        user = db.session.get(User, user_id)
+        yield user # Yield the user object bound to the session
+    
+    # Clean up
+    with app.app_context():
+        user_to_delete = db.session.get(User, user_id)
+        if user_to_delete:
+            db.session.delete(user_to_delete)
+        db.session.commit()
+
+@pytest.fixture
+def authenticated_user(app, sample_user):
+    """Create a sample user and generate an access token."""
+    with app.app_context():
+        # Generate token using the user's ID
+        access_token = create_access_token(identity=str(sample_user.id))
+        # Attach the token to the user object for easy access in tests
+        sample_user.token = access_token 
+    yield sample_user
+    # Cleanup is handled by the sample_user fixture

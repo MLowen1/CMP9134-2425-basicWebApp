@@ -13,7 +13,7 @@ RUN apt-get update && apt-get upgrade -y && \
 WORKDIR /app
 
 # Copy only the requirements file first to leverage Docker build cache
-COPY requirements.txt ./ 
+COPY requirements.txt ./
 
 # Install Python dependencies
 # Using --no-cache-dir reduces image size
@@ -21,7 +21,7 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of your backend application code into the WORKDIR (/app)
+# Copy the rest of your backend application code into the WORKDIR (/app) AFTER installing dependencies
 COPY . .
 
 # Ensure Flask can find your modules. Usually not needed if WORKDIR is /app

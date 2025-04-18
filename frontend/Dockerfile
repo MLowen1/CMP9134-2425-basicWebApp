@@ -5,12 +5,13 @@ FROM node:18-alpine
 WORKDIR /workspace
 
 # Copy the package.json and package-lock.json files into the container
-COPY package*.json .
+COPY package*.json ./
 
 # Install the Node.js dependencies
 RUN npm install
 
 # Copy the entire frontend code into the container
+# This will now copy the existing .cjs config files correctly
 COPY . .
 
 # Define the command to start the frontend development server

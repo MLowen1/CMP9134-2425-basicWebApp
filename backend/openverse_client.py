@@ -55,8 +55,21 @@ class OpenverseClient:
             return self.access_token
             
         except requests.exceptions.RequestException as e:
-            print(f"Error getting auth token: {e} {response.text}")
-            return None
+            # Check if response exists before accessing its attributes
+            error_message = f"Error getting auth token: {e}"
+            try:
+                # Try to access response.text if response was assigned
+                error_message += f" {response.text}"
+            except NameError:
+                # Handle the case where response is not defined
+                error_message += " (Response object not available)"
+            except AttributeError:
+                 # Handle cases where response might be assigned but doesn't have .text (less likely here)
+                 error_message += " (Response object has no text attribute)"
+            print(error_message)
+            # Re-raise the exception or return None/handle appropriately
+            # Depending on desired behavior, you might want to return None or raise a custom exception
+            return None # Or raise OpenverseAuthError("Failed to get auth token") from e
     
     def search_images(self, 
                     query: str, 

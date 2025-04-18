@@ -6,28 +6,51 @@ const ImageSearch = () => {
     const [error, setError] = useState(null);
 
     const handleSearch = async () => {
+        setError(null); // Clear previous errors
+        setImages([]); // Clear previous images
         try {
-            // Changed from query to q to match the backend expectation
-            const response = await fetch(`http://localhost:5000/search_images?q=${query}`);
+            // Corrected the URL to match the backend route /api/images/search
+            const response = await fetch(`http://localhost:5000/api/images/search?q=${query}`);
+            
+            // Check if the response was not ok (status code 200-299)
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                let errorMsg = `HTTP error! status: ${response.status}`;
+                try {
+                    // Attempt to get more specific error from backend response body
+                    const errorData = await response.json();
+                    if (errorData && errorData.error) {
+                        errorMsg = errorData.error; // Use backend error message
+                    }
+                } catch (jsonError) {
+                    // If response body is not JSON or empty, keep the original HTTP error
+                    console.error("Could not parse error response JSON:", jsonError);
+                }
+                throw new Error(errorMsg);
             }
+            
             const data = await response.json();
             
             // The API returns results in a nested structure, so we need to extract the actual images
             if (data.results) {
                 setImages(data.results.map(img => ({
-                    url: img.thumbnail || img.url,
+                    url: img.thumbnail || img.url, // Prefer thumbnail, fallback to full url
                     title: img.title || 'Untitled Image'
                 })));
             } else {
-                setImages([]);
+                setImages([]); // Handle cases where 'results' might be missing even on success
             }
-            setError(null);
+            // setError(null); // Already cleared at the start
+
         } catch (e) {
             console.error("Error fetching images:", e);
-            setError("Error fetching images. Please try again.");
-            setImages([]);  // Set as empty array on error
+            let displayError = e.message || "An unknown error occurred.";
+            // Provide a more helpful message for generic network errors
+            if (e.message === "Failed to fetch") {
+                displayError = "Failed to connect to the backend. Please ensure it's running and accessible.";
+            }
+            // Display the refined error message
+            setError(displayError);
+            setImages([]);  // Ensure images are cleared on error
         }
     };
 
@@ -51,7 +74,8 @@ const ImageSearch = () => {
                         </div>
                     ))
                 ) : (
-                    <p>No images to display. Try searching for something!</p>
+                    // Display message only if there's no error and no images after a search attempt
+                    !error && <p>No images to display. Try searching for something!</p> 
                 )}
             </div>
         </div>

@@ -10,14 +10,15 @@ from flask import Flask, Blueprint, request, jsonify
 from flask_cors import CORS
 from flask_migrate import Migrate
 # Revert to direct import
-from backend.extensions import db, jwt 
+# Import ov_client from extensions
+from .extensions import db, jwt, ov_client, migrate # Added migrate here
 # from .extensions import db, jwt # Ensure this uses direct import
 # Ensure this line correctly points to your contacts route file:
-from backend.routes.contact_routes import contacts_bp # Should match the actual filename, e.g., contact_routes.py
-from backend.routes.images import images_bp
-from backend.routes.auth import auth_bp # Changed to absolute import
+from .routes.contact_routes import contacts_bp # Should match the actual filename, e.g., contact_routes.py
+from .routes.images import images_bp
+from .routes.auth import auth_bp # Changed to absolute import
 # Revert to direct import
-from backend.models import TokenBlocklist, User # Ensure this uses direct import
+from .models import TokenBlocklist, User # Ensure this uses direct import
 from flask_jwt_extended import (
     JWTManager,
     create_access_token,
@@ -25,8 +26,9 @@ from flask_jwt_extended import (
     get_jwt_identity,
     jwt_required
 )
-# Import OpenverseClient first
-from openverse_client import OpenverseClient
+# Remove OpenverseClient import and initialization from here
+# from openverse_client import OpenverseClient
+from .config import config_by_name, Config
 
 # --- Initialize Extension Objects (Unbound) ---
 cors = CORS() # Initialize CORS object
@@ -35,15 +37,29 @@ cors = CORS() # Initialize CORS object
 bp = Blueprint("main", __name__)
 
 # --- Openverse Client ---
-ov_client = OpenverseClient()  # Can initialize here if it doesn't need app config
+# ov_client = OpenverseClient() # REMOVED: Moved to extensions.py
 
 # --- Import Models AFTER OpenverseClient ---
 # This might resolve the circular import if OpenverseClient imports models
 # Revert to direct import
-from backend.models import Contact, User, TokenBlocklist # Ensure this uses direct import
+from .models import Contact, User, TokenBlocklist # Ensure this uses direct import
 
 
 # --- Routes ---
+
+# Add the root route to the blueprint
+@bp.route("/")
+def index():
+    """Index route to confirm API is running."""
+    # Changed message to match test expectation if needed, or keep as is
+    return "API is running" 
+
+# Add the /api route to the blueprint for the test
+@bp.route("/api")
+def api_index():
+    """API index route."""
+    return jsonify({"message": "API is running"})
+
 @bp.route("/register", methods=["POST"])
 def register():
     username = request.json.get("username")
@@ -72,8 +88,8 @@ def login():
     user = User.query.filter_by(username=username).first()
     if user and user.check_password(password):
         access_token = create_access_token(identity=str(user.id))
-        return jsonify(access_token=access_token)
-    return jsonify({"message": "Invalid credentials"}), 401
+        return jsonify({"message": "Login succeeded", "access_token": access_token})
+    return jsonify({"message": "Bad username or password"}), 401
 
 
 @bp.route("/logout", methods=["POST"])
@@ -93,69 +109,84 @@ def logout():
         print(f"Error revoking token: {str(e)}") # Log the error
         return jsonify({"message": "Logout failed due to server error"}), 500
 
+# Add the @me route BEFORE create_app so it's defined when the blueprint is registered
+@bp.route("/@me", methods=["GET"])
+@jwt_required()
+def get_current_user():
+    """Get the currently authenticated user's information."""
+    current_user_id = get_jwt_identity()
+    # Use session.get() instead of query.get() to avoid LegacyAPIWarning
+    user = db.session.get(User, current_user_id)
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+    return jsonify({"id": user.id, "username": user.username}), 200
+
+# Add the /api/protected route for the test
+@bp.route("/api/protected")
+@jwt_required()
+def protected_route():
+    """A simple protected route."""
+    current_user_id = get_jwt_identity()
+    user = db.session.get(User, current_user_id)
+    return jsonify({"message": "This is a protected route", "logged_in_as": user.username})
 
 # --- Application Factory Function ---
-def create_app(config_object='config.Config'): # Point to a Config class within config.py
-    """Flask application factory."""
-    app = Flask(__name__)
+def create_app(config_class=Config): # Default to Config class
+    """
+    Application factory function.
+    Configures and returns the Flask application instance.
+    """
+    app = Flask(__name__, instance_relative_config=True) # Use instance folder for config/db
 
-    # Load configuration from config module/object
+    # Load configuration directly from the provided class object
+    app.config.from_object(config_class)
+
+    # Ensure instance folder exists
     try:
-        # Attempt to load from the specified object (e.g., config.Config)
-        app.config.from_object(config_object)
-    except ImportError:
-        print(f"Warning: Config object '{config_object}' not found or contains import errors. Loading from environment variables or defaults.")
-        # Fallback: Load essential config from environment or set defaults
-        app.config.from_mapping(
-            SECRET_KEY=os.environ.get('SECRET_KEY', 'dev_secret_key'),
-            SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL', 'sqlite:///app.db'),
-            SQLALCHEMY_TRACK_MODIFICATIONS=False,
-            JWT_SECRET_KEY=os.environ.get('JWT_SECRET_KEY', 'jwt_secret_key'),
-            # Add other necessary default configs
-        )
-    except Exception as e:
-         print(f"Error loading configuration: {e}. Using defaults.")
-         # Apply defaults if any other error occurs during config loading
-         app.config.from_mapping(
-            SECRET_KEY=os.environ.get('SECRET_KEY', 'dev_secret_key'),
-            SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL', 'sqlite:///app.db'),
-            SQLALCHEMY_TRACK_MODIFICATIONS=False,
-            JWT_SECRET_KEY=os.environ.get('JWT_SECRET_KEY', 'jwt_secret_key'),
-         )
+        os.makedirs(app.instance_path)
+    except OSError:
+        pass
 
-
-    # Initialize extensions WITH the app instance
+    # Ensure critical config values are set
+    app.config.setdefault('SQLALCHEMY_DATABASE_URI', 'sqlite:///:memory:')
+    app.config.setdefault('SQLALCHEMY_TRACK_MODIFICATIONS', False)
+    app.config.setdefault('JWT_SECRET_KEY', 'dev-key-for-testing')
+    
+    # Import extensions
+    from .extensions import db, jwt, cors, migrate, ov_client
+    
+    # Initialize extensions with the app
     db.init_app(app)
+    migrate.init_app(app, db) # Initialize migrate using the imported object
     jwt.init_app(app)
-    cors.init_app(app) # Initialize CORS with the app
-    Migrate(app, db) # Initialize Migrate here, after db and app are available
-
-    # Register JWT callbacks
+    cors.init_app(app)
+    
+    # Register JWT token blocklist loader
     @jwt.token_in_blocklist_loader
-    def check_if_token_in_blocklist(jwt_header, jwt_payload):
-        # Import model locally to avoid potential early import issues
-        # Revert to direct import
-        from backend.models import TokenBlocklist # Ensure this uses direct import
+    def check_if_token_blocklisted(jwt_header, jwt_payload):
+        from .models import TokenBlocklist
         jti = jwt_payload["jti"]
-        # Query the database for the token JTI
-        token_in_db = TokenBlocklist.query.filter_by(jti=jti).first()
-        return token_in_db is not None # Return True if token exists (is blocklisted)
+        return TokenBlocklist.query.filter_by(jti=jti).first() is not None
 
-    # Register the Blueprint
-    app.register_blueprint(bp)  # Register blueprint at root path '/'
-
-    # Register blueprints
+    # Register blueprints after extensions are initialized
+    # Register bp at the root URL prefix
+    app.register_blueprint(bp, url_prefix='/') 
     app.register_blueprint(contacts_bp, url_prefix='/api/contacts')
-    app.register_blueprint(images_bp, url_prefix='/api/images') # Ensure images_bp is registered
+    app.register_blueprint(images_bp, url_prefix='/api/images')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-
-    # Removed database creation from app factory
-    # Consider using Flask-Migrate commands ('flask db init', 'flask db migrate', 'flask db upgrade')
-    # or handle table creation explicitly in test fixtures.
-    # with app.app_context():
-    #     db.create_all()
-
+    
     return app
 
-# Ensure datetime is imported if used (e.g., in logout)
-# import datetime # Already imported above
+# Entry point for running the Flask application
+if __name__ == '__main__':
+    # Create the Flask app instance using the factory function
+    # Default to 'dev' configuration if FLASK_CONFIG is not set
+    config_name = os.environ.get('FLASK_CONFIG', 'dev')
+    app_config = config_by_name.get(config_name, Config)
+    app = create_app(app_config)
+    
+    # Run the Flask development server
+    # host='0.0.0.0' makes the server accessible externally (e.g., from Docker)
+    # debug=True enables automatic reloading and detailed error pages
+    # port=5000 specifies the port number
+    app.run(host='0.0.0.0', port=5000, debug=app.config['DEBUG'])
