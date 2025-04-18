@@ -1,0 +1,63 @@
+# File: CMP9134-2425-basicWebApp/docker-compose.yml
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "5001:5000" # Map container port 5000 to host port 5001
+    volumes:
+      - ./backend:/app/backend # Changed: Mount into /app/backend
+      - ./data:/data # Mount data volume
+    working_dir: /app # Keep working directory as /app
+    environment:
+      - PYTHONPATH=/app # Keep /app in Python path
+      - FLASK_APP=backend.main # Changed: Point to the module within /app
+      - FLASK_DEBUG=1
+      - DATABASE_URL=sqlite:////data/app.db # Use absolute path for SQLite in volume
+      - SECRET_KEY=${SECRET_KEY} # Use environment variable from .env
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY} # Use environment variable from .env
+    # Reverted command to just run Flask (removed ls commands)
+    command: flask run --host=0.0.0.0
+    networks:
+      - app-network
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"       
+    volumes:          
+      - ./frontend:/workspace:cached # Changed to /workspace
+      - /workspace/node_modules 
+    # Modify the command to install dependencies first
+    command: sh -c "npm install && npm run dev -- --host" 
+    networks:
+      - app-network
+
+  backend-test:
+    build:
+      context: ./backend          
+      dockerfile: Dockerfile.test 
+    volumes:
+      - ./backend:/app/backend:cached # Changed: Mount into /app/backend
+    working_dir: /app # Keep working directory as /app
+    environment:
+      - PYTHONPATH=/app # Keep /app in Python path
+      - FLASK_APP=backend.main:create_app() # Changed: Point to the module within /app
+    # Changed: Update coverage target and test path relative to working_dir
+    command: pytest -v --cov=backend --cov-report=term-missing backend/tests/ 
+
+  frontend-test:
+    build:
+      context: ./frontend         
+      dockerfile: Dockerfile.test 
+    volumes:
+      - ./frontend:/app:cached # Keep as /app
+      - /app/node_modules
+    command: npm test --prefix /app
+
+# Define the network at the top level
+networks:
+  app-network:
+    driver: bridge

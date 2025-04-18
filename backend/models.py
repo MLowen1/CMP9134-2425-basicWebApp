@@ -1,72 +1,51 @@
-from backend.config import db  # Updated import to point to the correct db
+from datetime import datetime, timezone
+# Ensure db is imported from extensions, not main
+from extensions import db
+from werkzeug.security import generate_password_hash, check_password_hash
 
-
+# --- Contact Model ---
 class Contact(db.Model):
-    # Attributes of the Contact class
-    # These attributes represent the data that each Contact object will hold.
-    id = db.Column(db.Integer, primary_key=True)  # Unique identifier for each contact
-    first_name = db.Column(db.String(80), unique=False, nullable=False)  # First name of the contact
-    last_name = db.Column(db.String(80), unique=False, nullable=False)  # Last name of the contact
-    email = db.Column(db.String(120), unique=True, nullable=False)  # Email address of the contact (must be unique)
-
-    # Explanation of OOP usage:
-    # The Contact class is a blueprint for creating "contact" objects.
-    # It inherits from db.Model, which is a class provided by Flask-SQLAlchemy.
-    # This inheritance allows the Contact class to interact with the database,
-    # enabling operations like creating, reading, updating, and deleting records.
-    # This demonstrates the OOP principle of inheritance.
+    id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(80), unique=False, nullable=False)
+    last_name = db.Column(db.String(80), unique=False, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    phone = db.Column(db.String(20), nullable=True) # Added phone field
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) # Link to User
 
     def to_json(self):
-        # Purpose of the to_json method:
-        # This method converts a Contact object into a JSON-compatible dictionary.
-        # JSON (JavaScript Object Notation) is commonly used for data exchange in web applications.
-        # By defining this method, we can easily serialize Contact objects into JSON format
-        # for use in APIs or other web-based interactions.
         return {
             "id": self.id,
             "firstName": self.first_name,
             "lastName": self.last_name,
             "email": self.email,
         }
+    def __repr__(self):
+        return f"<Contact {self.first_name} {self.last_name}>"
 
-
-# ----------------------------------------------------------------------------
-# Authentication / User model
-# ----------------------------------------------------------------------------
-
-from werkzeug.security import generate_password_hash, check_password_hash
-
-
+# --- User Model ---
 class User(db.Model):
-    """Basic user model used for JWT authentication.
-
-    NOTE:
-    -----
-    The model purposefully keeps the feature‑set minimal – only what is
-    required for the current iteration (username & password authentication).
-    """
-
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    _password_hash = db.Column("password_hash", db.String(255), nullable=False)
-
-    # ---------------------------------------------------------------------
-    # Helper / convenience methods
-    # ---------------------------------------------------------------------
+    password_hash = db.Column(db.String(256), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=True) # Added email field
 
     def set_password(self, plaintext: str) -> None:
-        """Hash *plaintext* using PBKDF2 and store the result."""
-
-        self._password_hash = generate_password_hash(plaintext)
+        self.password_hash = generate_password_hash(plaintext, method='pbkdf2:sha256', salt_length=16)
 
     def check_password(self, plaintext: str) -> bool:
-        """Return *True* if *plaintext* matches the stored hash."""
-
-        return check_password_hash(self._password_hash, plaintext)
-
-    # ------------------------------------------------------------------
-    # Serialisation helpers – *never* include password hash in responses
-    # ------------------------------------------------------------------
+        return check_password_hash(self.password_hash, plaintext)
 
     def to_json(self):
         return {"id": self.id, "username": self.username}
+
+    def __repr__(self):
+        return f"<User {self.username}>"
+
+# --- Token Blocklist Model ---
+class TokenBlocklist(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    jti = db.Column(db.String(36), unique=True, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    def __repr__(self):
+        return f"<TokenBlocklist {self.jti}>"

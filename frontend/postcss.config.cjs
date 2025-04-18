@@ -1,7 +1,7 @@
-// PostCSS configuration for Tailwind CSS and Autoprefixer
+// Use module.exports for CommonJS compatibility
 module.exports = {
   plugins: {
     tailwindcss: {},
-    autoprefixer: {}
-  }
+    autoprefixer: {},
+  },
 };

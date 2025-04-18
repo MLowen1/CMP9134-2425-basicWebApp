@@ -1,3 +1,22 @@
 {
-    "peacock.remoteColor": "#215732"
+    "peacock.remoteColor": "#215732",
+    "cSpell.words": [
+        "PYTHONPATH",
+        "flaskenv",
+        "conftest",
+        "psycopg",
+        "sqlalchemy",
+        "werkzeug",
+        "jsonify",
+        "Openverse",
+        "openverse",
+        "blocklisted"
+    ],
+    "files.associations": {
+        ".flaskenv": "dotenv",
+        "*.css": "tailwindcss" // Associate .css files with Tailwind CSS mode
+    },
+    "css.validate": false, // Disable default CSS validation (optional, try first without)
+    "scss.validate": false, // Disable default SCSS validation if you use SCSS (optional)
+    "less.validate": false // Disable default LESS validation if you use LESS (optional)
 }
