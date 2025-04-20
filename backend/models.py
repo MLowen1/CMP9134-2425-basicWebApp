@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
-from backend.extensions import db
+# Use relative import
+from .extensions import db 
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # --- Contact Model ---

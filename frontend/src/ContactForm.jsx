@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useState, useContext } from "react"; // Import useContext
+import { AuthContext } from "./AuthContext"; // Import AuthContext
 
 const ContactForm = ({ existingContact = {}, updateCallback }) => {
   // State variables to store form input values
   const [firstName, setFirstName] = useState(existingContact.firstName || ""); // First name of the contact
   const [lastName, setLastName] = useState(existingContact.lastName || ""); // Last name of the contact
   const [email, setEmail] = useState(existingContact.email || ""); // Email of the contact
+
+  // Get token from AuthContext
+  const { token } = useContext(AuthContext);
 
   // Determine if the form is being used to update an existing contact
   const updating = Object.entries(existingContact).length !== 0;
@@ -20,13 +24,16 @@ const ContactForm = ({ existingContact = {}, updateCallback }) => {
     };
 
     // Determine the API endpoint and HTTP method based on whether it's an update or create operation
+    // Use port 5001 and correct API path /api/contacts
     const url =
-      `http://localhost:5000/` + // Use localhost consistently
-      (updating ? `update_contact/${existingContact.id}` : "create_contact");
+      `http://localhost:5001/api/contacts` + 
+      (updating ? `/${existingContact.id}` : "");
     const options = {
-      method: updating ? "PATCH" : "POST", // PATCH for updating, POST for creating
+      method: updating ? "PUT" : "POST", // Use PUT for update as per REST conventions
       headers: {
         "Content-Type": "application/json", // Specify the content type as JSON
+        // Add Authorization header
+        "Authorization": `Bearer ${token}` 
       },
       body: JSON.stringify(data), // Convert the data object to a JSON string
     };
@@ -35,12 +42,12 @@ const ContactForm = ({ existingContact = {}, updateCallback }) => {
     const response = await fetch(url, options);
 
     // Handle the response from the backend
-    if (response.status !== 201 && response.status !== 200) {
-      // If the response indicates an error, display an alert with the error message
-      const message = await response.json();
-      alert(message.message);
-    } else {
-      // If the operation is successful, trigger the callback to refresh the contact list
+    if (!response.ok) { // Check if response status is not 2xx
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        // Try to parse the response body as JSON
+        const errorData = await response.json();
+        // Use the message from JSON if available, otherwise keep the status text
       updateCallback();
     }
   };

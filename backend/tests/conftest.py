@@ -5,16 +5,12 @@ import tempfile
 import signal
 import atexit
 import gc
-
-# Add the project root to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-
-# Import the app factory and extensions
-from backend.main import create_app
-from backend.extensions import db
-from backend.models import User, Contact
-# Import create_access_token
-from flask_jwt_extended import create_access_token
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+# Use direct import since /app is in PYTHONPATH
+from main import create_app 
+# Use relative import for models if needed, or adjust based on structure
+from models import db as _db, User, Contact, TokenBlocklist 
 
 # Session-level teardown function to clean up resources
 @pytest.fixture(scope="session", autouse=True)

@@ -1,6 +1,6 @@
-from flask import Blueprint, jsonify, request
-# Import the client instance from extensions
-from backend.extensions import ov_client
+from flask import Blueprint, request, jsonify
+# Use relative import
+from ..extensions import ov_client
 
 images_bp = Blueprint('images', __name__)
 

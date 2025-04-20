@@ -7,8 +7,9 @@ const ContactList = ({ contacts, updateContact, updateCallback }) => {
       const options = {
         method: "DELETE", // HTTP method used for deleting a resource
       };
+      // Use port 5001 and correct API path /api/contacts/<id>
       const response = await fetch(
-        `http://localhost:5000/delete_contact/${id}`, // Use localhost consistently
+        `http://localhost:5001/api/contacts/${id}`, 
         options
       );
 

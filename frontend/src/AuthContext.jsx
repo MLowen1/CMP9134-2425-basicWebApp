@@ -17,7 +17,7 @@ export function AuthProvider({ children }) {
   // Helper to load current user from token
   const fetchCurrentUser = async (accessToken) => {
     try {
-      const resp = await fetch('http://localhost:5000/@me', {
+      const resp = await fetch('http://localhost:5001/@me', {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (resp.ok) {
@@ -43,7 +43,7 @@ export function AuthProvider({ children }) {
   // Login function
   const login = async (username, password) => {
     try {
-      const resp = await fetch('http://localhost:5000/login', {
+      const resp = await fetch('http://localhost:5001/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -64,7 +64,7 @@ export function AuthProvider({ children }) {
   // Register function
   const register = async (username, password) => {
     try {
-      const resp = await fetch('http://localhost:5000/register', {
+      const resp = await fetch('http://localhost:5001/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -85,7 +85,7 @@ export function AuthProvider({ children }) {
   // Logout function
   const logout = async () => {
     if (token) {
-      await fetch('http://localhost:5000/logout', {
+      await fetch('http://localhost:5001/logout', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });

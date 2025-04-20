@@ -1,63 +1,66 @@
-# File: CMP9134-2425-basicWebApp/docker-compose.yml
-
 services:
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
-      - "5001:5000" # Map container port 5000 to host port 5001
+      - "5001:5000"
     volumes:
-      - ./backend:/app/backend # Changed: Mount into /app/backend
-      - ./data:/data # Mount data volume
-    working_dir: /app # Keep working directory as /app
+      - ./backend:/app:cached
+      - ./data:/data
     environment:
-      - PYTHONPATH=/app # Keep /app in Python path
-      - FLASK_APP=backend.main # Changed: Point to the module within /app
-      - FLASK_DEBUG=1
-      - DATABASE_URL=sqlite:////data/app.db # Use absolute path for SQLite in volume
-      - SECRET_KEY=${SECRET_KEY} # Use environment variable from .env
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY} # Use environment variable from .env
-    # Reverted command to just run Flask (removed ls commands)
-    command: flask run --host=0.0.0.0
-    networks:
-      - app-network
+      # Correct the FLASK_APP path again
+      FLASK_APP: main:create_app
+      FLASK_ENV: development
+      DATABASE_URL: sqlite:////data/app.db
+      SECRET_KEY: "dev-secret-key"
+      JWT_SECRET_KEY: "dev-jwt-secret-key"
+    # Run migrations before starting the server
+    command: sh -c "flask db upgrade && flask run --host=0.0.0.0 --port=5000"
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     depends_on:
       - backend
     ports:
-      - "5173:5173"       
-    volumes:          
-      - ./frontend:/workspace:cached # Changed to /workspace
-      - /workspace/node_modules 
-    # Modify the command to install dependencies first
-    command: sh -c "npm install && npm run dev -- --host" 
-    networks:
-      - app-network
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app:cached
+      - frontend_node_modules:/app/node_modules
+    command: sh -c "npm install && npm run dev -- --host"
 
   backend-test:
     build:
-      context: ./backend          
-      dockerfile: Dockerfile.test 
+      context: ./backend
+      dockerfile: Dockerfile.test
     volumes:
-      - ./backend:/app/backend:cached # Changed: Mount into /app/backend
-    working_dir: /app # Keep working directory as /app
+      - ./backend:/app
     environment:
-      - PYTHONPATH=/app # Keep /app in Python path
-      - FLASK_APP=backend.main:create_app() # Changed: Point to the module within /app
-    # Changed: Update coverage target and test path relative to working_dir
-    # command: pytest -v --cov=backend --cov-report=term-missing backend/tests/ # Commented out the pytest command
+      PYTHONPATH: /app
+      FLASK_ENV: testing
+      DATABASE_URL: "sqlite:///:memory:"
+      SECRET_KEY: "test-secret-key"
+      JWT_SECRET_KEY: "test-jwt-secret-key"
+      # Correct the FLASK_APP path
+      FLASK_APP: backend.main:create_app
+    command: pytest -v --cov=backend --cov-report=term-missing tests/
 
   frontend-test:
     build:
-      context: ./frontend         
-      dockerfile: Dockerfile.test 
+      context: ./frontend
+      dockerfile: Dockerfile.test
     volumes:
-      - ./frontend:/app:cached # Keep as /app
-      - /app/node_modules
-    command: npm test # Changed from 'npm test --prefix /app'
+      - ./frontend:/app:cached
+      - frontend_test_node_modules:/app/node_modules
+    # Use jest.config.js instead of jest.config.cjs
+    command: npm run test -- --config jest.config.js
 
-# Define the network at the top level
+volumes:
+  frontend_node_modules:
+  frontend_test_node_modules:
+
 networks:
-  app-network:
+  default:
     driver: bridge

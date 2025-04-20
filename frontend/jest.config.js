@@ -7,7 +7,8 @@ export default {
     "\\.(css|less|scss|sass)$": "<rootDir>/src/tests/__mocks__/styleMock.js"
   },
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
-  globalTeardown: "<rootDir>/jest.teardown.cjs", // Update extension to .cjs
+  // Update extension from .cjs to .js
+  globalTeardown: "<rootDir>/jest.teardown.js", 
   verbose: true, // Ensure verbose output is enabled
   collectCoverage: true, // Ensure coverage is enabled (matches script)
   coverageDirectory: "coverage", // Optional: specify coverage output dir

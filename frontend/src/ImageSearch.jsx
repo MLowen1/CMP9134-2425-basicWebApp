@@ -9,8 +9,8 @@ const ImageSearch = () => {
         setError(null); // Clear previous errors
         setImages([]); // Clear previous images
         try {
-            // Corrected the URL to match the backend route /api/images/search
-            const response = await fetch(`http://localhost:5000/api/images/search?q=${query}`);
+            // Corrected the URL to match the backend route /api/images/search and use port 5001
+            const response = await fetch(`http://localhost:5001/api/images/search?q=${query}`);
             
             // Check if the response was not ok (status code 200-299)
             if (!response.ok) {

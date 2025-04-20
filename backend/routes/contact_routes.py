@@ -1,18 +1,27 @@
 from flask import Blueprint, jsonify, request
-from backend.extensions import db
-from backend.models import Contact
+# Use relative import
+from ..extensions import db 
+# Use relative import
+from ..models import Contact
+# Import jwt_required and get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 contacts_bp = Blueprint('contacts', __name__)
 
 @contacts_bp.route('', methods=['GET'])
+@jwt_required() # Add JWT requirement
 def get_contacts():
-    """Get all contacts."""
-    contacts = Contact.query.all()
+    """Get contacts for the current user."""
+    current_user_id = get_jwt_identity()
+    # Filter contacts by user_id
+    contacts = Contact.query.filter_by(user_id=current_user_id).all()
     return jsonify([contact.to_json() for contact in contacts])
 
 @contacts_bp.route('', methods=['POST'])
+@jwt_required() # Add JWT requirement
 def create_contact():
-    """Create a new contact."""
+    """Create a new contact for the current user."""
+    current_user_id = get_jwt_identity()
     try:
         data = request.get_json()
         
@@ -28,11 +37,12 @@ def create_contact():
         if not data.get('firstName') or not data.get('lastName') or not data.get('email'):
              return jsonify({"message": "First name, last name, and email cannot be empty"}), 400
         
-        # Create new contact
+        # Create new contact and associate with user
         new_contact = Contact(
             first_name=data['firstName'],
             last_name=data['lastName'],
-            email=data['email']
+            email=data['email'],
+            user_id=current_user_id # Assign the user ID
         )
         
         # Add optional fields if present
@@ -51,19 +61,23 @@ def create_contact():
         return jsonify({"message": f"Error creating contact: {str(e)}"}), 500
 
 @contacts_bp.route('/<int:contact_id>', methods=['GET'])
+@jwt_required() # Add JWT requirement
 def get_contact(contact_id):
     """Get a specific contact by ID."""
+    current_user_id = get_jwt_identity()
     contact = db.session.get(Contact, contact_id)
-    if not contact:
+    if not contact or contact.user_id != current_user_id:
         return jsonify({"message": "Contact not found"}), 404
     return jsonify(contact.to_json())
 
 @contacts_bp.route('/<int:contact_id>', methods=['PUT'])
+@jwt_required() # Add JWT requirement
 def update_contact(contact_id):
     """Update an existing contact."""
+    current_user_id = get_jwt_identity()
     try:
         contact = db.session.get(Contact, contact_id)
-        if not contact:
+        if not contact or contact.user_id != current_user_id:
             return jsonify({"message": "Contact not found"}), 404
         data = request.get_json()
         
@@ -93,12 +107,15 @@ def update_contact(contact_id):
         print(f"Error updating contact: {str(e)}")
         return jsonify({"message": f"Error updating contact: {str(e)}"}), 500
 
+# Correct the methods definition
 @contacts_bp.route('/<int:contact_id>', methods=['DELETE'])
+@jwt_required() # Add JWT requirement
 def delete_contact(contact_id):
     """Delete a contact."""
+    current_user_id = get_jwt_identity()
     try:
         contact = db.session.get(Contact, contact_id)
-        if not contact:
+        if not contact or contact.user_id != current_user_id:
             return jsonify({"message": "Contact not found"}), 404
         db.session.delete(contact)
         db.session.commit()

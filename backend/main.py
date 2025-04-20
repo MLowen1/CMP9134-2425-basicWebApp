@@ -147,11 +147,17 @@ def create_app(config_class=Config): # Default to Config class
     except OSError:
         pass
 
-    # Ensure critical config values are set
-    app.config.setdefault('SQLALCHEMY_DATABASE_URI', 'sqlite:///:memory:')
+    # Ensure critical config values are set, BUT remove the database default
+    # REMOVED: app.config.setdefault('SQLALCHEMY_DATABASE_URI', 'sqlite:///:memory:')
     app.config.setdefault('SQLALCHEMY_TRACK_MODIFICATIONS', False)
     app.config.setdefault('JWT_SECRET_KEY', 'dev-key-for-testing')
-    
+
+    # Explicitly set DB URI from environment variable AFTER loading config object
+    # This ensures the env var overrides any defaults from the config object.
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///:memory:')
+    # Print the URI being used for verification (optional, for debugging)
+    print(f"Using database URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
+
     # Import extensions
     from .extensions import db, jwt, cors, migrate, ov_client
     

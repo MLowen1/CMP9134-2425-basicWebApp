@@ -1,6 +1,8 @@
-from flask import Blueprint, request, jsonify, current_app
-from backend.extensions import db, jwt # Assuming db and jwt might be needed
-from backend.models import User, TokenBlocklist # Assuming models are needed
+from flask import Blueprint, request, jsonify
+# Use relative import
+from ..extensions import db, jwt # Assuming db and jwt might be needed
+# Use relative import
+from ..models import User, TokenBlocklist
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt, get_jwt_identity
 import datetime
 # Add imports for password reset
@@ -24,7 +26,7 @@ def get_reset_serializer():
 def status():
     """Placeholder route to check auth status."""
     current_user_id = get_jwt_identity()
-    if current_user_id:
+    if (current_user_id):
         user = db.session.get(User, current_user_id)
         return jsonify(logged_in_as=user.username), 200
     else:
