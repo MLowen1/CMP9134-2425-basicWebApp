@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import ImageSearch from '../ImageSearch';
+import ImageSearch from '../pages/ImageSearch.jsx';
 import React from 'react';
 
 // Mock fetch for testing

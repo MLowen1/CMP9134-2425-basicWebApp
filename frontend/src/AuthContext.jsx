@@ -1,107 +1,111 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import axios from 'axios';
 
-// Default context values for unauthenticated usage
-const AuthContext = createContext({
-  user: null,
-  token: null,
-  isAuthenticated: false,
-  login: async () => ({ success: false }),
-  register: async () => ({ success: false }),
-  logout: () => {},
-});
+const AuthContext = createContext();
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(() => localStorage.getItem('token'));
-
-  // Helper to load current user from token
-  const fetchCurrentUser = async (accessToken) => {
-    try {
-      const resp = await fetch('http://localhost:5001/@me', {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      if (resp.ok) {
-        const data = await resp.json();
-        setUser(data);
-      } else {
-        setUser(null);
-        localStorage.removeItem('token');
-        setToken(null);
-      }
-    } catch {
-      setUser(null);
-    }
-  };
-
-  // On mount or when token changes, attempt to load user
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Initialize auth state from localStorage
   useEffect(() => {
-    if (token) {
-      fetchCurrentUser(token);
+    const token = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    
+    if (token && storedUser) {
+      setUser(JSON.parse(storedUser));
+      setIsAuthenticated(true);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
-  }, [token]);
+    
+    setIsLoading(false);
+  }, []);
 
   // Login function
-  const login = async (username, password) => {
+  const login = async (email, password) => {
     try {
-      const resp = await fetch('http://localhost:5001/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await resp.json();
-      if (resp.ok && data.access_token) {
-        localStorage.setItem('token', data.access_token);
-        setToken(data.access_token);
-        await fetchCurrentUser(data.access_token);
-        return { success: true };
-      }
-      return { success: false, message: data.message || 'Login failed' };
-    } catch (e) {
-      return { success: false, message: e.message };
+      const response = await axios.post('/api/auth/login', { email, password });
+      const { token, user } = response.data;
+      
+      // Store token and user in localStorage
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Set auth headers for future requests
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Update state
+      setUser(user);
+      setIsAuthenticated(true);
+      
+      return user;
+    } catch (error) {
+      console.error('Login failed:', error);
+      throw error;
     }
   };
 
   // Register function
-  const register = async (username, password) => {
+  const register = async (username, email, password) => {
     try {
-      const resp = await fetch('http://localhost:5001/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+      console.log('Sending registration request to:', '/api/auth/register');
+      console.log('Registration data:', { username, email });
+      
+      const response = await axios.post('/api/auth/register', {
+        username,
+        email,
+        password
       });
-      const data = await resp.json();
-      if (resp.ok && data.access_token) {
-        localStorage.setItem('token', data.access_token);
-        setToken(data.access_token);
-        await fetchCurrentUser(data.access_token);
-        return { success: true };
+      
+      console.log('Registration response:', response);
+      return response.data;
+    } catch (error) {
+      console.error('Registration failed:', error);
+      // Log more details about the error
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        console.error('Error status:', error.response.status);
       }
-      return { success: false, message: data.message || 'Registration failed' };
-    } catch (e) {
-      return { success: false, message: e.message };
+      throw error;
     }
   };
 
   // Logout function
   const logout = async () => {
-    if (token) {
-      await fetch('http://localhost:5001/logout', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    try {
+      // Optional: Call backend logout endpoint if you're using JWT blacklisting
+      if (isAuthenticated) {
+        await axios.post('/api/auth/logout');
+      }
+    } catch (error) {
+      console.error('Logout API call failed:', error);
+    } finally {
+      // Clear local storage and state regardless of API success
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      delete axios.defaults.headers.common['Authorization'];
+      setUser(null);
+      setIsAuthenticated(false);
     }
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
+  };
+
+  const value = {
+    user,
+    isAuthenticated,
+    isLoading,
+    login,
+    register,
+    logout
   };
 
   return (
-    <AuthContext.Provider
-      value={{ user, token, isAuthenticated: !!user, login, register, logout }}
-    >
-      {children}
+    <AuthContext.Provider value={value}>
+      {!isLoading && children}
     </AuthContext.Provider>
   );
 }
-
-export const useAuth = () => useContext(AuthContext);

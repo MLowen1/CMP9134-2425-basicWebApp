@@ -1,65 +1,103 @@
 import React, { useState } from 'react';
-import { useAuth } from './AuthContext';
+import { useAuth } from './AuthContext.jsx';
 
-export default function LoginForm({ switchToRegister }) {
-  const [username, setUsername] = useState('');
+function LoginForm({ switchToRegister, onClose }) {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  
   const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-    const result = await login(username, password);
-    if (!result.success) {
-      setError(result.message);
+    setError('');
+    setIsLoading(true);
+    
+    try {
+      await login(email, password);
+      // Success is handled by AuthContext which updates the isAuthenticated state
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to login. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="auth-form bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-xs">
-      <h2 className="text-xl font-semibold mb-4 text-center text-neutral-dark">Login</h2>
-      {error && <p className="text-danger text-xs italic mb-4">{error}</p>}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="username" className="block text-neutral-dark text-sm font-bold mb-2">Username:</label>
+    <div className="bg-card p-6 rounded-lg shadow-md w-full max-w-md relative">
+      {/* Exit Button */}
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute top-2 right-2 text-foreground-dark hover:text-danger text-xl font-bold focus:outline-none"
+        aria-label="Close login modal"
+      >
+        ×
+      </button>
+      <h2 className="text-2xl font-semibold text-center mb-6">Login</h2>
+      
+      {error && (
+        <div className="bg-danger-light text-danger p-3 rounded-md mb-4">
+          {error}
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit}>
+        <div className="mb-4">
+          <label htmlFor="email" className="block text-sm font-medium text-neutral-dark mb-1">
+            Email
+          </label>
           <input
-            id="username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-3 py-2 border border-neutral rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-neutral-dark leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-primary"
           />
         </div>
-        <div>
-          <label htmlFor="password" className="block text-neutral-dark text-sm font-bold mb-2">Password:</label>
+        
+        <div className="mb-6">
+          <label htmlFor="password" className="block text-sm font-medium text-neutral-dark mb-1">
+            Password
+          </label>
           <input
-            id="password"
             type="password"
+            id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-3 py-2 border border-neutral rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-neutral-dark mb-3 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-primary"
           />
         </div>
-        <button 
-          type="submit" 
-          className="w-full px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
-        >
-          Login
-        </button>
+        
+        <div className="flex flex-col space-y-4">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className={`w-full px-4 py-2 text-white rounded-md ${
+              isLoading
+                ? 'bg-primary-light cursor-not-allowed'
+                : 'bg-primary hover:bg-primary-hover'
+            }`}
+          >
+            {isLoading ? 'Signing in...' : 'Sign In'}
+          </button>
+          
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={switchToRegister}
+              className="text-primary hover:text-primary-hover text-sm"
+            >
+              Don't have an account? Register here
+            </button>
+          </div>
+        </div>
       </form>
-      <p className="text-center text-neutral-medium text-xs mt-4">
-        Don't have an account?{' '}
-        <button 
-          type="button" 
-          onClick={switchToRegister} 
-          className="font-bold text-primary hover:text-primary-dark focus:outline-none"
-        >
-          Register
-        </button>
-      </p>
     </div>
   );
 }
+
+export default LoginForm;

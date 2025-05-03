@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 # Use relative import
 from ..extensions import db, jwt # Assuming db and jwt might be needed
 # Use relative import
@@ -19,6 +19,81 @@ auth_bp = Blueprint('auth', __name__)
 # Helper function to get the serializer
 def get_reset_serializer():
     return URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+
+# --- Registration Route ---
+@auth_bp.route('/register', methods=['POST'])
+def register():
+    """Register a new user."""
+    data = request.get_json()
+    
+    # Validate required fields
+    if not all(k in data for k in ['username', 'email', 'password']):
+        return jsonify({'message': 'Missing required fields'}), 400
+    
+    # Check if username or email already exists
+    if User.query.filter_by(username=data['username']).first():
+        return jsonify({'message': 'Username already exists'}), 409
+    
+    if User.query.filter_by(email=data['email']).first():
+        return jsonify({'message': 'Email already exists'}), 409
+    
+    # Create new user
+    user = User(username=data['username'], email=data['email'])
+    user.set_password(data['password'])
+    
+    # Add to database
+    try:
+        db.session.add(user)
+        db.session.commit()
+        return jsonify({'message': 'User registered successfully'}), 201
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error during registration: {str(e)}")
+        return jsonify({'message': 'Registration failed'}), 500
+
+# --- Login Route ---
+@auth_bp.route('/login', methods=['POST'])
+def login():
+    """Log in an existing user."""
+    data = request.get_json()
+    
+    # Validate required fields
+    if not all(k in data for k in ['email', 'password']):
+        return jsonify({'message': 'Missing email or password'}), 400
+    
+    # Find user by email
+    user = User.query.filter_by(email=data['email']).first()
+    
+    # Check if user exists and password is correct
+    if not user or not user.check_password(data['password']):
+        return jsonify({'message': 'Invalid email or password'}), 401
+    
+    # Create access token
+    access_token = create_access_token(identity=user.id)
+    
+    return jsonify({
+        'token': access_token,
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email
+        }
+    }), 200
+
+# --- Logout Route ---
+@auth_bp.route('/logout', methods=['POST'])
+@jwt_required()
+def logout():
+    """Log out a user by adding their token to the blocklist."""
+    jti = get_jwt()["jti"]
+    now = datetime.datetime.now(datetime.timezone.utc)
+    
+    # Add token to blocklist
+    token_blocklist = TokenBlocklist(jti=jti, created_at=now)
+    db.session.add(token_blocklist)
+    db.session.commit()
+    
+    return jsonify({'message': 'Successfully logged out'}), 200
 
 # Example placeholder route if needed, otherwise this file can just define the blueprint
 @auth_bp.route('/status', methods=['GET'])
@@ -91,21 +166,13 @@ def reset_password():
         db.session.rollback()
         current_app.logger.error(f"Error resetting password: {str(e)}")
         return jsonify({"error": "An unexpected error occurred"}), 500
+    
+@auth_bp.route('/debug', methods=['GET'])
+def debug_route():
+    """Debug endpoint to check if auth routes are registered."""
+    return jsonify({"message": "Auth routes are working!"}), 200
 
-# Consider moving register, login, logout logic from main.py to here
-# Example:
-# @auth_bp.route("/register", methods=["POST"])
-# def register():
-#     # ... registration logic ...
-#     pass
-
-# @auth_bp.route("/login", methods=["POST"])
-# def login():
-#     # ... login logic ...
-#     pass
-
-# @auth_bp.route("/logout", methods=["POST"])
-# @jwt_required()
-# def logout():
-#     # ... logout logic ...
-#     pass
+@auth_bp.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint to verify the service is running."""
+    return jsonify({"status": "healthy"}), 200

@@ -30,18 +30,23 @@ sudo bash nodesource_setup.sh && sudo apt install -y nodejs
 cd frontend
 npm install
 4. Launch backend
-Open a new VSCode Terminal and launch the following commands.
+Open a new VSCode Terminal **in the project root directory (CMP9134-2425-basicWebApp)** and launch the following command. Make sure you are **not** inside the `backend` or `frontend` directory.
 
-cd ../backend
-python main.py
+```bash
+python -m backend.main
+```
 5. Launch frontend
 On a different terminal, launch:
 
+```bash
 cd frontend
 npm run dev
+```
 This will start the development server for the frontend, usually accessible at http://localhost:5173/.
 
 CREDITS:
 Adapted from: https://github.com/Pakheria/Basic-Web-Application
+
+http://localhost:5173/contacts
 
 

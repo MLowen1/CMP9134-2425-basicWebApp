@@ -1,29 +1,38 @@
-import { useState } from "react";
-import ImageSearch from "./ImageSearch";
+import { useState, useEffect } from "react";
+import ImageSearch from "./pages/ImageSearch.jsx";
 import { useAuth } from './AuthContext.jsx';
 import LoginForm from './LoginForm.jsx';
 import RegisterForm from './RegisterForm.jsx';
+import HomePage from './pages/HomePage.jsx';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('images'); // Default to images tab
+  const [activeTab, setActiveTab] = useState('home'); // Default to home tab
   const [authMode, setAuthMode] = useState(null); // 'login' or 'register' or null
   const { user, isAuthenticated, logout } = useAuth();
 
-  const tabButtonStyle = "px-4 py-2 rounded-md text-sm font-medium transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary";
-  const activeTabStyle = "bg-primary text-white shadow-sm"; // Added shadow for active tab
+  // Automatically go to image search when logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      setActiveTab('images');
+    }
+  }, [isAuthenticated]);
+
+  // Removed tabButtonStyle, activeTabStyle, inactiveTabStyle, and tab navigation
+  // Removed Login and Register buttons
 
   return (
-    <div className="min-h-screen bg-neutral-light p-4 sm:p-6 md:p-8 lg:p-12">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-background text-foreground p-4 sm:p-6 md:p-8 lg:p-12">
+      <div className="max-w-5xl mx-auto  border border-border rounded-lg shadow-md">
         {/* Authentication Header */}
         <div className="auth-header mb-8 flex justify-end items-center space-x-4">
           {isAuthenticated ? (
             <>
-              <span className="text-sm text-neutral-dark">Welcome, {user.username}</span>
+              <span className="text-sm text-foreground-dark">Welcome, {user.username}</span>
               <button
                 onClick={() => {
                   logout();
                   setAuthMode(null);
+                  setActiveTab('home');
                 }}
                 className="px-3 py-1.5 text-sm bg-danger text-white rounded-md hover:bg-danger-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-danger transition-colors"
               >
@@ -31,42 +40,45 @@ function App() {
               </button>
             </>
           ) : authMode === 'login' ? (
-            <LoginForm switchToRegister={() => setAuthMode('register')} />
-          ) : authMode === 'register' ? (
-            <RegisterForm switchToLogin={() => setAuthMode('login')} />
-          ) : (
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setAuthMode('login')}
-                className="px-3 py-1.5 text-sm bg-primary text-white rounded-md hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
-              >
-                Login
-              </button>
-              <button
-                onClick={() => setAuthMode('register')}
-                className="px-3 py-1.5 text-sm bg-secondary text-white rounded-md hover:bg-secondary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary transition-colors"
-              >
-                Register
-              </button>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+              <LoginForm 
+                switchToRegister={() => setAuthMode('register')} 
+                onClose={() => setAuthMode(null)} 
+              />
             </div>
-          )}
+          ) : authMode === 'register' ? (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+              <RegisterForm 
+                switchToLogin={() => setAuthMode('login')} 
+                onClose={() => setAuthMode(null)} 
+              />
+            </div>
+          ) : null}
         </div>
 
-        {/* Tab Navigation - Only Image Search */}
-        <div className="mb-8 border-b border-neutral pb-4 flex justify-center space-x-4">
-          <button
-            className={`${tabButtonStyle} ${activeTabStyle}`}
-          >
-            Image Search
-          </button>
-        </div>
+        {/* Removed tab navigation */}
 
-        {/* Main Content Area - Only Image Search */}
-        <div className="content-area">
-          <div className="images-tab">
-            <ImageSearch />
+        {/* Main Content Area */}
+        {authMode === null || isAuthenticated ? (
+          <div className="content-area">
+            {/* Only HomePage and ImageSearch remain, but no buttons to switch */}
+            {activeTab === 'home' && (
+              <HomePage 
+                onLoginClick={() => setAuthMode('login')}
+                onRegisterClick={() => setAuthMode('register')}
+              />
+            )}
+            {activeTab === 'images' && (
+              <div className="images-tab">
+                <ImageSearch />
+              </div>
+            )}
           </div>
-        </div>
+        ) : (
+          <div className="flex justify-center">
+            {/* Authentication forms are shown above in the header */}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,23 +1,15 @@
-"""
-Central place to create the shared Flask extensions.
-
-Import the objects (db, jwt, …) **only** from this file so circular‑import
-headaches disappear.
-"""
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
-from flask_migrate import Migrate # Import Migrate
+from flask_migrate import Migrate
 import sqlalchemy as sa
-# Import OpenverseClient
 from .openverse_client import OpenverseClient
 
 # Create extension instances
 db = SQLAlchemy()
 jwt = JWTManager()
 cors = CORS()
-migrate = Migrate() # Instantiate Migrate
-# Initialize Openverse client here
+migrate = Migrate()
 ov_client = OpenverseClient()
 
 # Function to reset SQLAlchemy engine cache for tests
@@ -35,7 +27,8 @@ def safe_create_all():
     import sqlite3
     
     # Import models to ensure they're registered with SQLAlchemy
-    from backend.models import User, Contact, TokenBlocklist
+    # Use relative import with dot prefix to avoid import issues
+    from .models import User, Contact, TokenBlocklist
     
     # Using lower-level SQLAlchemy APIs to create tables
     with db.engine.connect() as conn:
@@ -49,3 +42,12 @@ def safe_create_all():
                     print(f"Table {table.name} already exists")
                 else:
                     print(f"Error creating table {table.name}: {e}")
+
+# Move token blocklist loader implementation here to avoid circular imports
+@jwt.token_in_blocklist_loader
+def check_if_token_revoked(jwt_header, jwt_payload):
+    # Import inside function to avoid circular imports
+    from .models import TokenBlocklist
+    jti = jwt_payload["jti"]
+    token = TokenBlocklist.query.filter_by(jti=jti).first()
+    return token is not None

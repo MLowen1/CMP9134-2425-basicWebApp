@@ -7,4 +7,5 @@ python-dotenv==1.0.1
 requests==2.31.0
 Flask-Migrate
 flask-mail==0.9.1
+passlib[bcrypt]
 
