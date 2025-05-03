@@ -9,11 +9,7 @@ COPY package*.json ./
 # COPY .babelrc ./ # Consider if babel.config.cjs makes this redundant
 
 # Install dependencies
-<<<<<<< Updated upstream
-RUN npm install
-=======
 RUN npm install --verbose
->>>>>>> Stashed changes
 
 # Create mock directories relative to the new WORKDIR /app
 RUN mkdir -p /app/src/tests/__mocks__ && \
