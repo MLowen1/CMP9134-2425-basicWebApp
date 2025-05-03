@@ -27,9 +27,17 @@ services:
     ports:
       - "5173:5173"
     volumes:
+<<<<<<< Updated upstream
       - ./frontend:/app:cached
       - frontend_node_modules:/app/node_modules
     command: sh -c "npm install && npm run dev -- --host"
+=======
+      # Mount host code
+      - ./frontend:/app:cached
+      # Ensure this line is commented out or removed
+      # - frontend_node_modules:/app/node_modules
+    command: npm run dev -- --host
+>>>>>>> Stashed changes
 
   backend-test:
     build:
@@ -52,6 +60,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.test
     volumes:
+<<<<<<< Updated upstream
       - ./frontend:/app:cached
       - frontend_test_node_modules:/app/node_modules
     # Use jest.config.js instead of jest.config.cjs
@@ -60,6 +69,17 @@ services:
 volumes:
   frontend_node_modules:
   frontend_test_node_modules:
+=======
+      # Mount host code
+      - ./frontend:/app:cached
+      # Ensure this line is commented out or removed
+      # - frontend_test_node_modules:/app/node_modules
+    command: npm run test -- --config jest.config.js # Ensure config path is correct
+
+# volumes:
+#   frontend_node_modules:
+#   frontend_test_node_modules:
+>>>>>>> Stashed changes
 
 networks:
   default:
